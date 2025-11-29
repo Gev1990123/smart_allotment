@@ -1,0 +1,20 @@
+# Basic GPIO access
+RPi.GPIO==0.7.1
+
+# Reading sensors (if using I2C / SPI)
+smbus2==0.4.1
+
+# For sensor data logging
+pandas==2.1.0
+
+# Optional: plotting / visualization
+matplotlib==3.8.0
+
+# Optional: lightweight web dashboard
+flask==2.3.2
+
+# Optional: MQTT if sending data to broker
+paho-mqtt==1.6.1
+
+# Optional: HTTP requests for cloud logging
+requests==2.32.0
