@@ -1,0 +1,41 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f9;
+    color: #333;
+    margin: 20px;
+}
+
+h1 {
+    text-align: center;
+    color: #2c3e50;
+}
+
+/* Container for all charts */
+.charts-container {
+    display: flex;
+    justify-content: space-between; /* spread charts evenly */
+    flex-wrap: wrap;               /* allow wrapping on small screens */
+    gap: 20px;                     /* space between charts */
+}
+
+.chart-card {
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 10px;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+    flex: 1 1 30%;      /* try to take ~30% of container width */
+    max-width: 300px;   /* maximum width */
+    min-width: 200px;   /* ensure charts don’t shrink too small */
+}
+
+canvas {
+    width: 100% !important;
+    height: 200px !important;
+    display: block;
+}
+
+p {
+    font-size: 1.1em;
+    text-align: center;
+}
