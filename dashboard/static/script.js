@@ -43,5 +43,37 @@ async function updateCharts() {
     }
 }
 
-setInterval(updateCharts, 5000);
-window.onload = updateCharts;
+// ----- Alerts live update -----
+async function updateAlerts() {
+    try {
+        const res = await fetch('/alerts'); // Flask route returning JSON
+        const alerts = await res.json();
+
+        const tbody = document.querySelector('#alerts-table tbody');
+        tbody.innerHTML = ''; // Clear previous rows
+
+        alerts.forEach(alert => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${alert.time}</td>
+                <td>${alert.type}</td>
+                <td>${alert.sensor}</td>
+                <td>${alert.value}</td>
+            `;
+            tbody.appendChild(row);
+        });
+    } catch (err) {
+        console.error('Error fetching alerts:', err);
+    }
+}
+
+// Run both updates every 5 seconds
+setInterval(() => {
+    updateCharts();
+    updateAlerts();
+}, 5000);
+
+window.onload = () => {
+    updateCharts();
+    updateAlerts();
+};

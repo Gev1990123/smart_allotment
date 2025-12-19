@@ -3,7 +3,8 @@ import logging
 # import smtplib
 # from email.message import EmailMessage
 
-# Optional: email sending function (keep as-is)
+ALERTS = []  # Global list to keep alerts
+
 def send_email_alert(subject, body, to_email):
     """
     Send an email alert.
@@ -32,6 +33,9 @@ def alert_low_moisture(sensor_name, value):
     
     # Log to app.log
     logging.warning(f"{subject} - {body}")
+
+    # Add Alert
+    add_alert("Low Moisture", sensor_name, value)
     
     # Optionally send email
     # send_email_alert(subject, body, "you@example.com")
@@ -48,6 +52,17 @@ def alert_high_temperature(sensor_name, value):
     
     # Log to app.log
     logging.warning(f"{subject} - {body}")
+
+    # Add Alert
+    add_alert("High Temperature", sensor_name, value)
     
     # Optionally send email
     # send_email_alert(subject, body, "you@example.com")
+
+def add_alert(alert_type, sensor_name, value):
+    """Add an alert to the global list, keeping only the last 10."""
+    from datetime import datetime
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    ALERTS.append({"time": timestamp, "type": alert_type, "sensor": sensor_name, "value": value})
+    if len(ALERTS) > 10:
+        ALERTS.pop(0)  # Keep only last 10

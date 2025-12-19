@@ -20,5 +20,5 @@ while True:
     if sm < LOW_MOISTURE_THRESHOLD:
         notifications.alert_low_moisture("Plot 1", sm)
 
-    #time.sleep(10)  # 10 seconds between readings for testing
-    time.sleep(300)  # 5 minutes between readings for testing
+    time.sleep(10)  # 10 seconds between readings for testing
+    #time.sleep(300)  # 5 minutes between readings for testing

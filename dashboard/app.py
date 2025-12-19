@@ -5,12 +5,24 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 from flask import Flask, render_template, jsonify
 from sensors import soil_moisture, temperature, light
+from utils.notifications import ALERTS
 
 app = Flask(__name__)
 
 @app.route('/')
 def index():
-    return render_template("index.html")
+    # Get latest sensor readings
+    soil = soil_moisture.read()
+    temp = temperature.read()
+    light_val = light.read()
+
+    # Render dashboard template
+    return render_template("index.html", soil=soil, temp=temp, light=light_val)
+
+@app.route("/alerts")
+def get_alerts():
+    """Return the last alerts as JSON"""
+    return jsonify(ALERTS)
 
 @app.route('/api/readings')
 def readings():
