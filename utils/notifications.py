@@ -1,9 +1,12 @@
 # utils/notifications.py
 import logging
+import json
+import os
+from datetime import datetime
 # import smtplib
 # from email.message import EmailMessage
 
-ALERTS = []  # Global list to keep alerts
+ALERTS_FILE = "data/logs/alerts.json"
 
 def send_email_alert(subject, body, to_email):
     """
@@ -59,10 +62,32 @@ def alert_high_temperature(sensor_name, value):
     # Optionally send email
     # send_email_alert(subject, body, "you@example.com")
 
+
+def _load_alerts():
+    """Load all alerts from the JSON file."""
+    if not os.path.exists(ALERTS_FILE):
+        return []
+    try:
+        with open(ALERTS_FILE, "r") as f:
+            return json.load(f)
+    except Exception:
+        return []
+
+def _save_alert(alert):
+    """Append a new alert to the file."""
+    alerts = _load_alerts()
+    alerts.append(alert)  # keep all alerts
+    os.makedirs(os.path.dirname(ALERTS_FILE), exist_ok=True)
+    with open(ALERTS_FILE, "w") as f:
+        json.dump(alerts, f, indent=2)
+
 def add_alert(alert_type, sensor_name, value):
-    """Add an alert to the global list, keeping only the last 10."""
-    from datetime import datetime
+    """Add a new alert (stored permanently)."""
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    ALERTS.append({"time": timestamp, "type": alert_type, "sensor": sensor_name, "value": value})
-    if len(ALERTS) > 10:
-        ALERTS.pop(0)  # Keep only last 10
+    alert = {
+        "time": timestamp,
+        "type": alert_type,
+        "sensor": sensor_name,
+        "value": value
+    }
+    _save_alert(alert)
