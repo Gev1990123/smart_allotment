@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.swp
+
+# Virtual environment
+venv/
+.env
+
+# Logs
+data/logs/
+*.log
+
+# OS / IDE
+.DS_Store
+*.idea/
+*.vscode/
+*.vscodesettings.json
