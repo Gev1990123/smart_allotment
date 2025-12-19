@@ -8,11 +8,22 @@
 <body>
     <h1>Smart Allotment Dashboard</h1>
 
-    <div id="sensor-status">
-        <p>Soil Moisture: <span id="soil-status">?</span></p>
-        <p>Temperature: <span id="temp-status">?</span></p>
-        <p>Light: <span id="light-status">?</span></p>
-    </div>
+    <table id="sensor-status" style="width:100%; text-align:center; margin-bottom:20px;">
+        <thead>
+            <tr>
+                <th>Moisture</th>
+                <th>Temperature</th>
+                <th>Light</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td id="soil-status">?</td>
+                <td id="temp-status">?</td>
+                <td id="light-status">?</td>
+            </tr>
+        </tbody>
+    </table>
 
     <div class="charts-container">
         <div class="chart-card">

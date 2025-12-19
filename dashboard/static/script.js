@@ -1,5 +1,6 @@
 let soilChart, tempChart, lightChart;
 
+// Update sensor charts
 async function updateCharts() {
     try {
         const res = await fetch('/api/readings');
@@ -44,9 +45,7 @@ async function updateCharts() {
         }
 
         // Update sensor status indicators
-        document.getElementById('soil-status').textContent = data.soil_status;
-        document.getElementById('temp-status').textContent = data.temp_status;
-        document.getElementById('light-status').textContent = data.light_status;
+        updateSensorStatus(data);
 
     } catch (err) {
         console.error('Error fetching readings:', err);
@@ -77,12 +76,28 @@ async function updateAlerts() {
     }
 }
 
+// ----- Sensor status update -----
+function updateSensorStatus(data) {
+    const soilEl = document.getElementById('soil-status');
+    const tempEl = document.getElementById('temp-status');
+    const lightEl = document.getElementById('light-status');
+
+    soilEl.textContent = data.soil_status;
+    tempEl.textContent = data.temp_status;
+    lightEl.textContent = data.light_status;
+
+    soilEl.className = data.soil_status.toLowerCase();    // "online" or "offline"
+    tempEl.className = data.temp_status.toLowerCase();
+    lightEl.className = data.light_status.toLowerCase();
+}
+
 // Run updates every 5 seconds
 setInterval(() => {
     updateCharts();
     updateAlerts();
 }, 5000);
 
+// Initial load
 window.onload = () => {
     updateCharts();
     updateAlerts();

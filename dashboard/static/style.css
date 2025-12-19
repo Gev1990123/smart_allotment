@@ -56,3 +56,22 @@ th {
     background-color: #4CAF50;
     color: white;
 }
+
+#sensor-status {
+    border-collapse: collapse;
+    font-weight: bold;
+}
+
+#sensor-status th, #sensor-status td {
+    border: 1px solid #ccc;
+    padding: 6px 12px;
+    font-size: 0.9rem;
+}
+
+#sensor-status td.online {
+    color: green;
+}
+
+#sensor-status td.offline {
+    color: red;
+}
