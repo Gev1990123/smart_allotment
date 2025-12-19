@@ -7,7 +7,7 @@ echo " $(date)"
 echo "======================================"
 
 # ---- CONFIG ----
-PROJECT_DIR="/home/pi/smart_allotment"
+PROJECT_DIR="/home/smart-allotment/smart_allotment"
 VENV_DIR="$PROJECT_DIR/venv"
 LOG_DIR="$PROJECT_DIR/logs"
 LOG_FILE="$LOG_DIR/deploy.log"
