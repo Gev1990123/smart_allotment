@@ -1,10 +1,10 @@
+import logging
 import time
 from utils import logger, notifications
 from sensors import soil_moisture, temperature, light
 
 # Initialize logging
 logger.setup()
-import logging
 
 logging.info("Starting Smart Allotment main loop with mock sensors")
 
