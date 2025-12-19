@@ -1,21 +1,34 @@
-# utils/logger.py
 import logging
 import os
 
 def setup(log_file="data/logs/app.log"):
     """
     Sets up logging for the Smart Allotment app.
-
-    Args:
-        log_file (str): Path to the log file
+    Logs to both file and console.
     """
-    # Ensure the logs directory exists
     os.makedirs(os.path.dirname(log_file), exist_ok=True)
 
-    # Configure logging
-    logging.basicConfig(
-        filename=log_file,
-        level=logging.INFO,
-        format="%(asctime)s - %(levelname)s - %(message)s"
-    )
+    # Get root logger
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+
+    # Remove any existing handlers
+    if logger.hasHandlers():
+        logger.handlers.clear()
+
+    # File handler
+    file_handler = logging.FileHandler(log_file)
+    file_handler.setLevel(logging.INFO)
+    file_formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+    file_handler.setFormatter(file_formatter)
+
+    # Console handler
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+    console_handler.setFormatter(file_formatter)
+
+    # Add handlers
+    logger.addHandler(file_handler)
+    logger.addHandler(console_handler)
+
     logging.info("Logging initialized")
