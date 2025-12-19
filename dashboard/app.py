@@ -37,11 +37,36 @@ def get_alerts():
 
 @app.route('/api/readings')
 def readings():
+    try:
+        soil_val = soil_moisture.read()
+        soil_status = "Online"
+    except:
+        soil_val = None
+        soil_status = "Offline"
+
+    try:
+        temp_val = temperature.read()
+        temp_status = "Online"
+    except:
+        temp_val = None
+        temp_status = "Offline"
+
+    try:
+        light_val = light.read()
+        light_status = "Online"
+    except:
+        light_val = None
+        light_status = "Offline"
+
     return jsonify({
-        "soil_moisture": soil_moisture.read(),
-        "temperature": temperature.read(),
-        "light": light.read()
+        "soil_moisture": soil_val,
+        "soil_status": soil_status,
+        "temperature": temp_val,
+        "temp_status": temp_status,
+        "light": light_val,
+        "light_status": light_status
     })
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

@@ -77,3 +77,12 @@ window.onload = () => {
     updateCharts();
     updateAlerts();
 };
+
+async function updateSensorStatus(data) {
+    document.getElementById('soil-status').textContent = data.soil_status;
+    document.getElementById('temp-status').textContent = data.temp_status;
+    document.getElementById('light-status').textContent = data.light_status;
+}
+
+// Inside updateCharts(), after updating charts:
+updateSensorStatus(data);
