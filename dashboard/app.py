@@ -104,13 +104,22 @@ def readings():
     light_data = [r.value for r in light_vals]
     light_labels = [r.timestamp.strftime("%H:%M:%S") for r in light_vals]
 
+    soil_status = "Online" if soil_data else "Offline"
+    temp_status = "Online" if temp_data else "Offline"
+    light_status = "Online" if light_data else "Offline"
+
     return jsonify({
         "soil_moisture": soil_data,
         "soil_labels": soil_labels,
+        "soil_status": soil_status,
+
         "temperature": temp_data,
         "temp_labels": temp_labels,
+        "temp_status": temp_status,
+
         "light": light_data,
-        "light_labels": light_labels
+        "light_labels": light_labels,
+        "light_status": light_status
     })
 
 if __name__ == '__main__':
