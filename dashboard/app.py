@@ -6,10 +6,10 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 import threading
 import time
 from flask import Flask, render_template, jsonify
-from smart_allotment.models import db
-from smart_allotment.models.sensor_data import SensorReading
-from smart_allotment.models.alerts import Alert
-from smart_allotment.sensors import soil_moisture, temperature, light
+from models import db
+from models.sensor_data import SensorReading
+from models.alerts import Alert
+from sensors import soil_moisture, temperature, light
 
 LOW_MOISTURE_THRESHOLD = 30  # %
 
