@@ -104,9 +104,10 @@ def readings():
     light_data = [r.value for r in light_vals]
     light_labels = [r.timestamp.strftime("%H:%M:%S") for r in light_vals]
 
-    soil_status = "Online" if soil_data else "Offline"
-    temp_status = "Online" if temp_data else "Offline"
-    light_status = "Online" if light_data else "Offline"
+    soil_status = "Online" if soil_vals and (soil_vals[-1].timestamp is not None) else "Offline"
+    temp_status = "Online" if temp_vals and (temp_vals[-1].timestamp is not None) else "Offline"
+    light_status = "Online" if light_vals and (light_vals[-1].timestamp is not None) else "Offline"
+
 
     return jsonify({
         "soil_moisture": soil_data,
