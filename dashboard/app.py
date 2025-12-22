@@ -77,17 +77,40 @@ def get_alerts():
 
 @app.route('/api/readings')
 def readings():
-    soil = SensorReading.query.filter_by(sensor_type='soil_moisture').order_by(SensorReading.timestamp.desc()).first()
-    temp = SensorReading.query.filter_by(sensor_type='temperature').order_by(SensorReading.timestamp.desc()).first()
-    light_val = SensorReading.query.filter_by(sensor_type='light').order_by(SensorReading.timestamp.desc()).first()
+    N = 20  # Number of points to show on chart
+
+    soil_vals = SensorReading.query \
+        .filter_by(sensor_type='soil_moisture') \
+        .order_by(SensorReading.timestamp.desc()) \
+        .limit(N).all()[::-1]  # reverse to oldest->newest
+
+    temp_vals = SensorReading.query \
+        .filter_by(sensor_type='temperature') \
+        .order_by(SensorReading.timestamp.desc()) \
+        .limit(N).all()[::-1]
+
+    light_vals = SensorReading.query \
+        .filter_by(sensor_type='light') \
+        .order_by(SensorReading.timestamp.desc()) \
+        .limit(N).all()[::-1]
+
+    # Convert to simple lists
+    soil_data = [r.value for r in soil_vals]
+    soil_labels = [r.timestamp.strftime("%H:%M:%S") for r in soil_vals]
+
+    temp_data = [r.value for r in temp_vals]
+    temp_labels = [r.timestamp.strftime("%H:%M:%S") for r in temp_vals]
+
+    light_data = [r.value for r in light_vals]
+    light_labels = [r.timestamp.strftime("%H:%M:%S") for r in light_vals]
 
     return jsonify({
-        "soil_moisture": soil.value if soil else None,
-        "soil_status": "Online" if soil else "Offline",
-        "temperature": temp.value if temp else None,
-        "temp_status": "Online" if temp else "Offline",
-        "light": light_val.value if light_val else None,
-        "light_status": "Online" if light_val else "Offline"
+        "soil_moisture": soil_data,
+        "soil_labels": soil_labels,
+        "temperature": temp_data,
+        "temp_labels": temp_labels,
+        "light": light_data,
+        "light_labels": light_labels
     })
 
 if __name__ == '__main__':
