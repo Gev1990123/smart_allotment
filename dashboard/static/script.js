@@ -5,48 +5,30 @@ async function updateCharts() {
     try {
         const res = await fetch('/api/readings');
         const data = await res.json();
-        const now = new Date().toLocaleTimeString();
 
-        function updateChart(chart, value) {
-            chart.data.labels.push(now);
-            chart.data.datasets[0].data.push(value);
-            if (chart.data.labels.length > 20) {
-                chart.data.labels.shift();
-                chart.data.datasets[0].data.shift();
-            }
-            chart.update();
+        function initChart(id, label, color, values, labels, maxY) {
+            const ctx = document.getElementById(id).getContext('2d');
+            return new Chart(ctx, {
+                type: 'line',
+                data: { labels: labels, datasets: [{ label: label, data: values, borderColor: color, fill: false }] },
+                options: { scales: { y: { min: 0, max: maxY } } }
+            });
         }
 
         if (!soilChart) {
-            const ctxSoil = document.getElementById('soilChart').getContext('2d');
-            soilChart = new Chart(ctxSoil, {
-                type: 'line',
-                data: { labels:[now], datasets:[{label:'Soil Moisture', data:[data.soil_moisture], borderColor:'green', fill:false}] },
-                options:{scales:{y:{min:0,max:100}}}
-            });
-
-            const ctxTemp = document.getElementById('tempChart').getContext('2d');
-            tempChart = new Chart(ctxTemp, {
-                type: 'line',
-                data: { labels:[now], datasets:[{label:'Temperature', data:[data.temperature], borderColor:'red', fill:false}] },
-                options:{scales:{y:{min:0,max:50}}}
-            });
-
-            const ctxLight = document.getElementById('lightChart').getContext('2d');
-            lightChart = new Chart(ctxLight, {
-                type: 'line',
-                data: { labels:[now], datasets:[{label:'Light', data:[data.light], borderColor:'orange', fill:false}] },
-                options:{scales:{y:{min:0,max:100}}}
-            });
+            soilChart = initChart('soilChart', 'Soil Moisture', 'green', data.soil_moisture, data.soil_labels, 100);
+            tempChart = initChart('tempChart', 'Temperature', 'red', data.temperature, data.temp_labels, 50);
+            lightChart = initChart('lightChart', 'Light', 'orange', data.light, data.light_labels, 100);
         } else {
-            updateChart(soilChart, data.soil_moisture);
-            updateChart(tempChart, data.temperature);
-            updateChart(lightChart, data.light);
+            function updateChart(chart, values, labels) {
+                chart.data.labels = labels;
+                chart.data.datasets[0].data = values;
+                chart.update();
+            }
+            updateChart(soilChart, data.soil_moisture, data.soil_labels);
+            updateChart(tempChart, data.temperature, data.temp_labels);
+            updateChart(lightChart, data.light, data.light_labels);
         }
-
-        // Update sensor status indicators
-        updateSensorStatus(data);
-
     } catch (err) {
         console.error('Error fetching readings:', err);
     }
