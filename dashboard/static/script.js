@@ -29,6 +29,10 @@ async function updateCharts() {
             updateChart(tempChart, data.temperature, data.temp_labels);
             updateChart(lightChart, data.light, data.light_labels);
         }
+
+        // Update sensor status indicators
+        updateSensorStatus(data);
+
     } catch (err) {
         console.error('Error fetching readings:', err);
     }
