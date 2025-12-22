@@ -1,72 +1,90 @@
-import sys
-import json, os
-
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
+import threading
+import time
 from flask import Flask, render_template, jsonify
-from sensors import soil_moisture, temperature, light
+from smart_allotment.models import db
+from smart_allotment.models.sensor_data import SensorReading
+from smart_allotment.models.alerts import Alert
+from smart_allotment.sensors import soil_moisture, temperature, light
+
+LOW_MOISTURE_THRESHOLD = 30  # %
 
 app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data/smart_allotment.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-ALERTS_FILE = "data/logs/alerts.json"
+db.init_app(app)
 
+# ---------------- Sensor Logging Loop ----------------
+def log_readings_loop(interval=300):
+    """Continuously log sensor readings and create alerts"""
+    with app.app_context():
+        while True:
+            try:
+                soil_val = soil_moisture.read()
+                db.session.add(SensorReading(sensor_type='soil_moisture', value=soil_val))
+                if soil_val < LOW_MOISTURE_THRESHOLD:
+                    db.session.add(Alert(alert_type='Low Moisture', sensor_name='Soil', value=soil_val))
+                db.session.commit()
+            except Exception as e:
+                print("Error logging soil:", e)
+
+            try:
+                temp_val = temperature.read()
+                db.session.add(SensorReading(sensor_type='temperature', value=temp_val))
+                db.session.commit()
+            except Exception as e:
+                print("Error logging temperature:", e)
+
+            try:
+                light_val = light.read()
+                db.session.add(SensorReading(sensor_type='light', value=light_val))
+                db.session.commit()
+            except Exception as e:
+                print("Error logging light:", e)
+
+            time.sleep(interval)
+
+# Start background thread
+threading.Thread(target=log_readings_loop, daemon=True).start()
+
+# ---------------- Dashboard Routes ----------------
 @app.route('/')
 def index():
-    # Get latest sensor readings
-    soil = soil_moisture.read()
-    temp = temperature.read()
-    light_val = light.read()
+    # latest readings from database
+    with app.app_context():
+        soil = SensorReading.query.filter_by(sensor_type='soil_moisture').order_by(SensorReading.timestamp.desc()).first()
+        temp = SensorReading.query.filter_by(sensor_type='temperature').order_by(SensorReading.timestamp.desc()).first()
+        light_val = SensorReading.query.filter_by(sensor_type='light').order_by(SensorReading.timestamp.desc()).first()
 
-    # Render dashboard template
-    return render_template("index.html", soil=soil, temp=temp, light=light_val)
+    return render_template("index.html",
+                           soil=soil.value if soil else None,
+                           temp=temp.value if temp else None,
+                           light=light_val.value if light_val else None)
 
 @app.route("/alerts")
 def get_alerts():
-    """Return only the last 10 alerts as JSON for the dashboard."""
-    if os.path.exists(ALERTS_FILE):
-        try:
-            with open(ALERTS_FILE, "r") as f:
-                alerts = json.load(f)
-        except Exception:
-            alerts = []
-    else:
-        alerts = []
-
-    # Return only last 10 for live table
-    return jsonify(alerts[-10:])
+    alerts = Alert.query.order_by(Alert.timestamp.desc()).limit(10).all()
+    return jsonify([{"time": a.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+                     "type": a.alert_type,
+                     "sensor": a.sensor_name,
+                     "value": a.value} for a in alerts])
 
 @app.route('/api/readings')
 def readings():
-    try:
-        soil_val = soil_moisture.read()
-        soil_status = "Online"
-    except:
-        soil_val = None
-        soil_status = "Offline"
-
-    try:
-        temp_val = temperature.read()
-        temp_status = "Online"
-    except:
-        temp_val = None
-        temp_status = "Offline"
-
-    try:
-        light_val = light.read()
-        light_status = "Online"
-    except:
-        light_val = None
-        light_status = "Offline"
+    soil = SensorReading.query.filter_by(sensor_type='soil_moisture').order_by(SensorReading.timestamp.desc()).first()
+    temp = SensorReading.query.filter_by(sensor_type='temperature').order_by(SensorReading.timestamp.desc()).first()
+    light_val = SensorReading.query.filter_by(sensor_type='light').order_by(SensorReading.timestamp.desc()).first()
 
     return jsonify({
-        "soil_moisture": soil_val,
-        "soil_status": soil_status,
-        "temperature": temp_val,
-        "temp_status": temp_status,
-        "light": light_val,
-        "light_status": light_status
+        "soil_moisture": soil.value if soil else None,
+        "soil_status": "Online" if soil else "Offline",
+        "temperature": temp.value if temp else None,
+        "temp_status": "Online" if temp else "Offline",
+        "light": light_val.value if light_val else None,
+        "light_status": "Online" if light_val else "Offline"
     })
 
-
 if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
     app.run(host='0.0.0.0', port=5000, debug=True)
