@@ -24,6 +24,7 @@ def read():
     """
     try:
         value = GPIO.input(SENSOR_PIN)
+        logging.info(f"GPIO Value = {value}")
         # Digital sensor: 1 = wet, 0 = dry
         percentage = 100 if value else 0
         logging.info(f"[GPIO] Soil moisture reading: {percentage}%")
