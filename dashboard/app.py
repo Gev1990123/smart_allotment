@@ -12,6 +12,8 @@ from models.alerts import Alert
 from sensors import soil_moisture, temperature, light
 
 LOW_MOISTURE_THRESHOLD = 30  # %
+HIGH_TEMP_THRESHOLD = 60 # %
+LOW_LIGHT_THRESHOLD = 30 # %
 
 app = Flask(__name__)
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -37,6 +39,8 @@ def log_readings_loop(interval=300):
             try:
                 temp_val = temperature.read()
                 db.session.add(SensorReading(sensor_type='temperature', value=temp_val))
+                if temp_val >= HIGH_TEMP_THRESHOLD:
+                    db.session.add(Alert(alert_type='High Temperature', sensor_name='Temp', value=temp_val))
                 db.session.commit()
             except Exception as e:
                 print("Error logging temperature:", e)
@@ -44,6 +48,8 @@ def log_readings_loop(interval=300):
             try:
                 light_val = light.read()
                 db.session.add(SensorReading(sensor_type='light', value=light_val))
+                if light_val <= LOW_LIGHT_THRESHOLD:
+                    db.session.add(Alert(alert_type='Low Light', sensor_name='Light', value=light_val))
                 db.session.commit()
             except Exception as e:
                 print("Error logging light:", e)

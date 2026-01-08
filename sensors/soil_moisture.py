@@ -7,17 +7,17 @@ SENSOR_PIN = 17
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(SENSOR_PIN, GPIO.IN)
 
-def read():
-    """
-    Mock reading of soil moisture for testing.
-    Returns an integer from 0 (dry) to 100 (wet).
-    """
-    value = random.randint(0, 100)
-    logging.info(f"[MOCK] Soil moisture reading: {value}")
-    return value
-
-# Can be used with live data
 #def read():
+#    """
+#    Mock reading of soil moisture for testing.
+#    Returns an integer from 0 (dry) to 100 (wet).
+#    """
+#    value = random.randint(0, 100)
+#    logging.info(f"[MOCK] Soil moisture reading: {value}")
+#    return value
+
+# Can be used with live data with
+def read():
     """
     Reads the soil moisture sensor and returns a percentage.
     0% = completely dry, 100% = wet
@@ -32,6 +32,6 @@ def read():
         logging.error(f"Error reading soil moisture: {e}")
         return None
 
-#def cleanup():
+def cleanup():
     """Clean up GPIO (call at program exit)"""
     GPIO.cleanup()
