@@ -1,38 +1,55 @@
-import random
 import logging
-import RPi.GPIO as GPIO
+import board
+import busio
+from adafruit_ads1x15.ads1x15 import Pin
+from adafruit_ads1x15.ads1115 import ADS1115
+from adafruit_ads1x15.analog_in import AnalogIn
 
-SENSOR_PIN = 17
+# =============================
+# CALIBRATION VALUES (IMPORTANT)
+# =============================
+# Measure these values once with your sensor:
+#  - DRY: sensor in air
+#  - WET: sensor fully submerged in water
 
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(SENSOR_PIN, GPIO.IN)
+DRY_VOLTAGE = 2.48    # example: adjust after calibration
+WET_VOLTAGE = 1.0    # example: adjust after calibration
 
-#def read():
-#    """
-#    Mock reading of soil moisture for testing.
-#    Returns an integer from 0 (dry) to 100 (wet).
-#    """
-#    value = random.randint(0, 100)
-#    logging.info(f"[MOCK] Soil moisture reading: {value}")
-#    return value
+# =============================
+# I2C / ADC SETUP
+# =============================
+i2c = busio.I2C(board.SCL, board.SDA)
+ads = ADS1115(i2c)
 
-# Can be used with live data with
+# Use channel A0
+channel = AnalogIn(ads, Pin.A0)
+
+# =============================
+# READ FUNCTION
+# =============================
 def read():
     """
-    Reads the soil moisture sensor and returns a percentage.
-    0% = completely dry, 100% = wet
+    Reads soil moisture via ADS1115 and returns percentage.
+    0% = dry, 100% = wet
     """
     try:
-        value = GPIO.input(SENSOR_PIN)
-        logging.info(f"GPIO Value = {value}")
-        # Digital sensor: 1 = wet, 0 = dry
-        percentage = 100 if value else 0
-        logging.info(f"[GPIO] Soil moisture reading: {percentage}%")
-        return percentage
-    except Exception as e:
-        logging.error(f"Error reading soil moisture: {e}")
-        return None
+        voltage = channel.voltage
+        logging.info(f"Soil sensor voltage: {voltage:.3f} V")
 
-def cleanup():
-    """Clean up GPIO (call at program exit)"""
-    GPIO.cleanup()
+        # Clamp voltage to calibration range
+        voltage = max(min(voltage, DRY_VOLTAGE), WET_VOLTAGE)
+
+        # Convert voltage → percentage
+        percentage = (
+            (DRY_VOLTAGE - voltage)
+            / (DRY_VOLTAGE - WET_VOLTAGE)
+        ) * 100
+
+        percentage = round(percentage, 1)
+
+        logging.info(f"Soil moisture: {percentage}%")
+        return percentage
+
+    except Exception as e:
+        logging.error(f"Error reading soil moisture sensor: {e}")
+        return None
