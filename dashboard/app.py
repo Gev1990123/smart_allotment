@@ -52,10 +52,11 @@ def log_readings_loop(app, db, interval=300):
 
 # ---------------- Route Functions (no @app.route decorators) ----------------
 def index():
-    """Homepage route"""
+    """Homepage route - FIXED"""
     from models import db
     from flask import render_template
     
+    # Use app.app_context() since db doesn't have app reference
     with db.app.app_context():
         soil = SensorReading.query.filter_by(sensor_type='soil_moisture').order_by(SensorReading.timestamp.desc()).first()
         temp = SensorReading.query.filter_by(sensor_type='temperature').order_by(SensorReading.timestamp.desc()).first()
@@ -71,7 +72,8 @@ def get_alerts():
     from models import db
     from flask import jsonify
     
-    alerts = Alert.query.order_by(Alert.timestamp.desc()).limit(10).all()
+    with db.app.app_context():
+        alerts = Alert.query.order_by(Alert.timestamp.desc()).limit(10).all()
     return jsonify([{
         "time": a.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
         "type": a.alert_type,
@@ -80,26 +82,27 @@ def get_alerts():
     } for a in alerts])
 
 def readings():
-    """Readings API route"""
+    """Readings API route - FIXED"""
     from models import db
     from flask import jsonify
     from models.sensor_data import SensorReading
     
-    N = 20
-    soil_vals = SensorReading.query \
-        .filter_by(sensor_type='soil_moisture') \
-        .order_by(SensorReading.timestamp.desc()) \
-        .limit(N).all()[::-1]
+    with db.app.app_context():
+        N = 20
+        soil_vals = SensorReading.query \
+            .filter_by(sensor_type='soil_moisture') \
+            .order_by(SensorReading.timestamp.desc()) \
+            .limit(N).all()[::-1]
 
-    temp_vals = SensorReading.query \
-        .filter_by(sensor_type='temperature') \
-        .order_by(SensorReading.timestamp.desc()) \
-        .limit(N).all()[::-1]
+        temp_vals = SensorReading.query \
+            .filter_by(sensor_type='temperature') \
+            .order_by(SensorReading.timestamp.desc()) \
+            .limit(N).all()[::-1]
 
-    light_vals = SensorReading.query \
-        .filter_by(sensor_type='light') \
-        .order_by(SensorReading.timestamp.desc()) \
-        .limit(N).all()[::-1]
+        light_vals = SensorReading.query \
+            .filter_by(sensor_type='light') \
+            .order_by(SensorReading.timestamp.desc()) \
+            .limit(N).all()[::-1]
 
     soil_data = [r.value for r in soil_vals]
     soil_labels = [r.timestamp.strftime("%H:%M:%S") for r in soil_vals]
@@ -108,9 +111,9 @@ def readings():
     light_data = [r.value for r in light_vals]
     light_labels = [r.timestamp.strftime("%H:%M:%S") for r in light_vals]
 
-    soil_status = "Online" if soil_vals and (soil_vals[-1].timestamp is not None) else "Offline"
-    temp_status = "Online" if temp_vals and (temp_vals[-1].timestamp is not None) else "Offline"
-    light_status = "Online" if light_vals and (light_vals[-1].timestamp is not None) else "Offline"
+    soil_status = "Online" if soil_vals and soil_vals[-1].timestamp else "Offline"
+    temp_status = "Online" if temp_vals and temp_vals[-1].timestamp else "Offline"
+    light_status = "Online" if light_vals and light_vals[-1].timestamp else "Offline"
 
     return jsonify({
         "soil_moisture": soil_data,
