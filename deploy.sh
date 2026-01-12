@@ -2,7 +2,7 @@
 set -e
 
 echo "======================================"
-echo " Smart Allotment Deployment Started"
+echo " Smart Allotment Auto Update"
 echo " $(date)"
 echo "======================================"
 
@@ -11,53 +11,57 @@ PROJECT_DIR="/home/smart-allotment/smart_allotment"
 VENV_DIR="$PROJECT_DIR/venv"
 LOG_DIR="$PROJECT_DIR/logs"
 LOG_FILE="$LOG_DIR/deploy.log"
-MAIN_SCRIPT="main.py"
 
-# ---- ENSURE DIRECTORIES EXIST ----
+DASHBOARD_SERVICE="smart_allotment_dashboard"
+LOGGER_SERVICE="smart_allotment_logger"
+
+# ---- ENSURE DIRECTORIES ----
 mkdir -p "$LOG_DIR"
 
 # ---- LOG EVERYTHING ----
 exec >> "$LOG_FILE" 2>&1
 
-echo "Changing to project directory"
 cd "$PROJECT_DIR"
 
-# ---- SET UP PYTHON VENV ----
+echo "Fetching latest code from GitHub"
+git fetch origin main
+
+LOCAL_HASH=$(git rev-parse HEAD)
+REMOTE_HASH=$(git rev-parse origin/main)
+
+if [ "$LOCAL_HASH" = "$REMOTE_HASH" ]; then
+  echo "No updates available. Exiting."
+  exit 0
+fi
+
+echo "Updates found. Pulling..."
+git pull origin main
+
+# ---- PYTHON ENV ----
 if [ ! -d "$VENV_DIR" ]; then
-  echo "Creating virtual environment"
+  echo "Creating virtualenv"
   python3 -m venv "$VENV_DIR"
 fi
 
-echo "Activating virtual environment"
 source "$VENV_DIR/bin/activate"
 
-# ---- INSTALL DEPENDENCIES ----
 echo "Upgrading pip"
 pip install --upgrade pip
 
 if [ -f "requirements.txt" ]; then
-  echo "Installing Python dependencies"
+  echo "Installing requirements"
   pip install -r requirements.txt
-else
-  echo "No requirements.txt found — skipping"
 fi
 
-# ---- OPTIONAL: STOP PREVIOUS INSTANCE ----
-if pgrep -f "$MAIN_SCRIPT" > /dev/null; then
-  echo "Stopping existing $MAIN_SCRIPT"
-  pkill -f "$MAIN_SCRIPT"
-fi
+# ---- DATABASE SAFETY ----
+echo "Ensuring data directory exists"
+mkdir -p "$PROJECT_DIR/data"
 
-# ---- START APPLICATION ----
-if [ -f "$MAIN_SCRIPT" ]; then
-  echo "Starting $MAIN_SCRIPT"
-  nohup python "$MAIN_SCRIPT" >> "$LOG_DIR/app.log" 2>&1 &
-  echo "$MAIN_SCRIPT started successfully"
-else
-  echo "ERROR: $MAIN_SCRIPT not found!"
-  exit 1
-fi
+# ---- RESTART SERVICES ----
+echo "Restarting services"
+sudo systemctl restart "$LOGGER_SERVICE"
+sudo systemctl restart "$DASHBOARD_SERVICE"
 
 echo "======================================"
-echo " Deployment completed successfully"
+echo " Update complete"
 echo "======================================"
