@@ -1,7 +1,7 @@
 import logging
 import os
 
-def setup(log_file="data/logs/app.log"):
+def setup(log_file="logs/app.log"):
     """
     Sets up logging for the Smart Allotment app.
     Logs to both file and console.
