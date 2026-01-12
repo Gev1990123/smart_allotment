@@ -3,8 +3,8 @@ set -e
 
 PROJECT_DIR="/home/smartallotment/smart_allotment"
 VENV_DIR="$PROJECT_DIR/venv"
-LOG_DIR="$PROJECT_DIR/data/logs"
-LOG_FILE="$LOG_DIR/data/deploy.log"
+LOG_DIR="$PROJECT_DIR/logs"
+LOG_FILE="$LOG_DIR/deploy.log"
 SERVICE="smart-allotment"
 
 mkdir -p "$LOG_DIR"
