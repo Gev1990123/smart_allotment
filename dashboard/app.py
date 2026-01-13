@@ -1,51 +1,141 @@
 #!/usr/bin/env python3
-import logging
-import os
 import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import threading
-from pathlib import Path
+import time
+from flask import Flask, render_template, jsonify
+from flask_sqlalchemy import SQLAlchemy
+from models.sensor_data import SensorReading
+from models.alerts import Alert
+from sensors import soil_moisture, temperature, light
 
-# === 1. SETUP LOGGING FIRST ===
-PROJECT_DIR = Path(__file__).parent
-LOG_DIR = PROJECT_DIR / "logs"
-LOG_DIR.mkdir(exist_ok=True)
+# === CREATE APP & DB HERE (eliminates circular imports) ===
+app = Flask(__name__)
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(BASE_DIR, 'data', 'smart_allotment.db')}"
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler(LOG_DIR / "app.log"),
-        logging.StreamHandler()
-    ]
-)
-logger = logging.getLogger(__name__)
-logger.info("=== Smart Allotment service starting ===")
+LOW_MOISTURE_THRESHOLD = 30  # %
+HIGH_TEMP_THRESHOLD = 60 # %
+LOW_LIGHT_THRESHOLD = 30 # %
 
-# === 2. IMPORT APP & START SENSORS ===
-try:
-    from dashboard.app import app, log_readings_loop
-    
-    # Start sensor logging thread
-    sensor_thread = threading.Thread(target=log_readings_loop, daemon=True, name='SensorThread')
-    sensor_thread.start()
-    logger.info("Sensor logging thread started")
-    
-    # === 3. DATABASE SETUP ===
+def log_readings_loop(interval=300):
+    """Continuously log sensor readings and create alerts"""
+    print("Sensor logging loop started")
     with app.app_context():
-        from models import db
+        while True:
+            try:
+                soil_val = soil_moisture.read()
+                db.session.add(SensorReading(sensor_type='soil_moisture', value=soil_val))
+                if soil_val < LOW_MOISTURE_THRESHOLD:
+                    db.session.add(Alert(alert_type='Low Moisture', sensor_name='Soil', value=soil_val))
+                db.session.commit()
+                print(f"Soil moisture: {soil_val}%")
+            except Exception as e:
+                print("Error logging soil:", e)
+
+            try:
+                temp_val = temperature.read()
+                db.session.add(SensorReading(sensor_type='temperature', value=temp_val))
+                if temp_val >= HIGH_TEMP_THRESHOLD:
+                    db.session.add(Alert(alert_type='High Temperature', sensor_name='Temp', value=temp_val))
+                db.session.commit()
+                print(f"Temperature: {temp_val}°C")
+            except Exception as e:
+                print("Error logging temperature:", e)
+
+            try:
+                light_val = light.read()
+                db.session.add(SensorReading(sensor_type='light', value=light_val))
+                if light_val <= LOW_LIGHT_THRESHOLD:
+                    db.session.add(Alert(alert_type='Low Light', sensor_name='Light', value=light_val))
+                db.session.commit()
+                print(f"Light: {light_val}%")
+            except Exception as e:
+                print("Error logging light:", e)
+
+            time.sleep(interval)
+
+# Start background thread
+threading.Thread(target=log_readings_loop, daemon=True).start()
+
+# ---------------- ROUTES ----------------
+@app.route('/')
+def index():
+    soil = SensorReading.query.filter_by(sensor_type='soil_moisture').order_by(SensorReading.timestamp.desc()).first()
+    temp = SensorReading.query.filter_by(sensor_type='temperature').order_by(SensorReading.timestamp.desc()).first()
+    light_val = SensorReading.query.filter_by(sensor_type='light').order_by(SensorReading.timestamp.desc()).first()
+
+    return render_template("index.html",
+                          soil=soil.value if soil else None,
+                          temp=temp.value if temp else None,
+                          light=light_val.value if light_val else None)
+
+@app.route("/alerts")
+def get_alerts():
+    alerts = Alert.query.order_by(Alert.timestamp.desc()).limit(10).all()
+    return jsonify([{
+        "time": a.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+        "type": a.alert_type,
+        "sensor": a.sensor_name,
+        "value": a.value
+    } for a in alerts])
+
+@app.route('/api/readings')
+def readings():
+    N = 20
+    soil_vals = SensorReading.query \
+        .filter_by(sensor_type='soil_moisture') \
+        .order_by(SensorReading.timestamp.desc()) \
+        .limit(N).all()[::-1]
+
+    temp_vals = SensorReading.query \
+        .filter_by(sensor_type='temperature') \
+        .order_by(SensorReading.timestamp.desc()) \
+        .limit(N).all()[::-1]
+
+    light_vals = SensorReading.query \
+        .filter_by(sensor_type='light') \
+        .order_by(SensorReading.timestamp.desc()) \
+        .limit(N).all()[::-1]
+
+    soil_data = [r.value for r in soil_vals]
+    soil_labels = [r.timestamp.strftime("%H:%M:%S") for r in soil_vals]
+    temp_data = [r.value for r in temp_vals]
+    temp_labels = [r.timestamp.strftime("%H:%M:%S") for r in temp_vals]
+    light_data = [r.value for r in light_vals]
+    light_labels = [r.timestamp.strftime("%H:%M:%S") for r in light_vals]
+
+    soil_status = "Online" if soil_vals and soil_vals[-1].timestamp else "Offline"
+    temp_status = "Online" if temp_vals and temp_vals[-1].timestamp else "Offline"
+    light_status = "Online" if light_vals and light_vals[-1].timestamp else "Offline"
+
+    return jsonify({
+        "soil_moisture": soil_data,
+        "soil_labels": soil_labels,
+        "soil_status": soil_status,
+        "temperature": temp_data,
+        "temp_labels": temp_labels,
+        "temp_status": temp_status,
+        "light": light_data,
+        "light_labels": light_labels,
+        "light_status": light_status
+    })
+
+# ---------------- STARTUP ----------------
+if __name__ == '__main__':
+    # Manual testing
+    with app.app_context():
         db.create_all()
-        logger.info("Database tables created")
+    app.run(host='0.0.0.0', port=5000, debug=True)
+else:
+    # Systemd service
+    with app.app_context():
+        db.create_all()
+        print("Smart Allotment Dashboard started on port 5000")
     
-    # === 4. START FLASK SERVER ===
-    logger.info("Starting Flask server on 0.0.0.0:5000")
-    
-    # Production WSGI server
     from werkzeug.serving import run_simple
     run_simple('0.0.0.0', 5000, app, use_reloader=False)
-    
-except ImportError as e:
-    logger.error(f"Import error: {e}")
-    sys.exit(1)
-except Exception as e:
-    logger.error(f"Service startup failed: {e}")
-    sys.exit(1)
