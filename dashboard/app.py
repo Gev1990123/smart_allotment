@@ -1,129 +1,51 @@
-import sys
+#!/usr/bin/env python3
+import logging
 import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import sys
+import threading
+from pathlib import Path
 
-import time
-from models.sensor_data import SensorReading
-from models.alerts import Alert
-from sensors import soil_moisture, temperature, light
+# === 1. SETUP LOGGING FIRST ===
+PROJECT_DIR = Path(__file__).parent
+LOG_DIR = PROJECT_DIR / "logs"
+LOG_DIR.mkdir(exist_ok=True)
 
-LOW_MOISTURE_THRESHOLD = 30  # %
-HIGH_TEMP_THRESHOLD = 60 # %
-LOW_LIGHT_THRESHOLD = 30 # %
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler(LOG_DIR / "app.log"),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
+logger.info("=== Smart Allotment service starting ===")
 
-# These are imported from main.py - no app/db creation here
-
-def log_readings_loop(app, db, interval=300):
-    """Continuously log sensor readings and create alerts"""
-    print("Sensor logging loop started")
+# === 2. IMPORT APP & START SENSORS ===
+try:
+    from dashboard.app import app, log_readings_loop
+    
+    # Start sensor logging thread
+    sensor_thread = threading.Thread(target=log_readings_loop, daemon=True, name='SensorThread')
+    sensor_thread.start()
+    logger.info("Sensor logging thread started")
+    
+    # === 3. DATABASE SETUP ===
     with app.app_context():
-        while True:
-            try:
-                soil_val = soil_moisture.read()
-                db.session.add(SensorReading(sensor_type='soil_moisture', value=soil_val))
-                if soil_val < LOW_MOISTURE_THRESHOLD:
-                    db.session.add(Alert(alert_type='Low Moisture', sensor_name='Soil', value=soil_val))
-                db.session.commit()
-                print(f"Soil moisture: {soil_val}%")
-            except Exception as e:
-                print("Error logging soil:", e)
-
-            try:
-                temp_val = temperature.read()
-                db.session.add(SensorReading(sensor_type='temperature', value=temp_val))
-                if temp_val >= HIGH_TEMP_THRESHOLD:
-                    db.session.add(Alert(alert_type='High Temperature', sensor_name='Temp', value=temp_val))
-                db.session.commit()
-                print(f"Temperature: {temp_val}°C")
-            except Exception as e:
-                print("Error logging temperature:", e)
-
-            try:
-                light_val = light.read()
-                db.session.add(SensorReading(sensor_type='light', value=light_val))
-                if light_val <= LOW_LIGHT_THRESHOLD:
-                    db.session.add(Alert(alert_type='Low Light', sensor_name='Light', value=light_val))
-                db.session.commit()
-                print(f"Light: {light_val}%")
-            except Exception as e:
-                print("Error logging light:", e)
-
-            time.sleep(interval)
-
-# ---------------- Route Functions (no @app.route decorators) ----------------
-def index():
-    """Homepage route"""
-    from flask import render_template
+        from models import db
+        db.create_all()
+        logger.info("Database tables created")
     
-    # Use app.app_context() since db doesn't have app reference
-    # with db.app.app_context():
-    soil = SensorReading.query.filter_by(sensor_type='soil_moisture').order_by(SensorReading.timestamp.desc()).first()
-    temp = SensorReading.query.filter_by(sensor_type='temperature').order_by(SensorReading.timestamp.desc()).first()
-    light_val = SensorReading.query.filter_by(sensor_type='light').order_by(SensorReading.timestamp.desc()).first()
-
-    return render_template("index.html",
-                          soil=soil.value if soil else None,
-                          temp=temp.value if temp else None,
-                          light=light_val.value if light_val else None)
-
-def get_alerts():
-    """Alerts API route"""
-    from flask import jsonify
+    # === 4. START FLASK SERVER ===
+    logger.info("Starting Flask server on 0.0.0.0:5000")
     
-    #with db.app.app_context():
-        
-    alerts = Alert.query.order_by(Alert.timestamp.desc()).limit(10).all()
-    return jsonify([{
-        "time": a.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
-        "type": a.alert_type,
-        "sensor": a.sensor_name,
-        "value": a.value
-    } for a in alerts])
-
-def readings():
-    """Readings API route"""
-    from flask import jsonify
-    from models.sensor_data import SensorReading
+    # Production WSGI server
+    from werkzeug.serving import run_simple
+    run_simple('0.0.0.0', 5000, app, use_reloader=False)
     
-    #with db.app.app_context():
-    N = 20
-    soil_vals = SensorReading.query \
-        .filter_by(sensor_type='soil_moisture') \
-        .order_by(SensorReading.timestamp.desc()) \
-        .limit(N).all()[::-1]
-
-    temp_vals = SensorReading.query \
-        .filter_by(sensor_type='temperature') \
-        .order_by(SensorReading.timestamp.desc()) \
-        .limit(N).all()[::-1]
-
-    light_vals = SensorReading.query \
-        .filter_by(sensor_type='light') \
-        .order_by(SensorReading.timestamp.desc()) \
-        .limit(N).all()[::-1]
-
-    soil_data = [r.value for r in soil_vals]
-    soil_labels = [r.timestamp.strftime("%H:%M:%S") for r in soil_vals]
-    temp_data = [r.value for r in temp_vals]
-    temp_labels = [r.timestamp.strftime("%H:%M:%S") for r in temp_vals]
-    light_data = [r.value for r in light_vals]
-    light_labels = [r.timestamp.strftime("%H:%M:%S") for r in light_vals]
-
-    soil_status = "Online" if soil_vals and soil_vals[-1].timestamp else "Offline"
-    temp_status = "Online" if temp_vals and temp_vals[-1].timestamp else "Offline"
-    light_status = "Online" if light_vals and light_vals[-1].timestamp else "Offline"
-
-    return jsonify({
-        "soil_moisture": soil_data,
-        "soil_labels": soil_labels,
-        "soil_status": soil_status,
-        "temperature": temp_data,
-        "temp_labels": temp_labels,
-        "temp_status": temp_status,
-        "light": light_data,
-        "light_labels": light_labels,
-        "light_status": light_status
-    })
-
-# Export functions for main.py
-__all__ = ['log_readings_loop', 'index', 'get_alerts', 'readings']
+except ImportError as e:
+    logger.error(f"Import error: {e}")
+    sys.exit(1)
+except Exception as e:
+    logger.error(f"Service startup failed: {e}")
+    sys.exit(1)
