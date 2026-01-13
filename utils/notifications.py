@@ -1,4 +1,5 @@
 # utils/notifications.py
+import utils.logger
 import logging
 import json
 import os
@@ -6,6 +7,9 @@ from datetime import datetime, timedelta
 import smtplib
 from email.message import EmailMessage
 from dotenv import load_dotenv
+
+# == SETUP LOGGING ===
+utils.logger.setup()
 
 load_dotenv()
 
