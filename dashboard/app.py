@@ -11,6 +11,10 @@ from models.db import db
 from models.sensor_data import SensorReading
 from models.alerts import Alert
 from sensors import soil_moisture, temperature, light
+import utils.logger as logger
+
+# == SETUP LOGGING ===
+logger.setup("logs/app.log")
 
 # === CREATE APP & DB HERE (eliminates circular imports) ===
 app = Flask(__name__)
@@ -27,7 +31,7 @@ LOW_LIGHT_THRESHOLD = 30 # %
 
 def log_readings_loop(interval=300):
     """Continuously log sensor readings and create alerts"""
-    print("Sensor logging loop started")
+    logger.info("=== Smart Allotment Dashboard starting ===")
     with app.app_context():
         while True:
             try:
