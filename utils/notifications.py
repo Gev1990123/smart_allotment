@@ -122,10 +122,18 @@ def alert_low_light(sensor_name, value):
 def load_alerts():
     """Load last alert times from data/alerts/alerts.json."""
     if os.path.exists(ALERTS_FILE):
-        with open(ALERTS_FILE, 'r') as f:
-            return json.load(f)
+        try: 
+            with open(ALERTS_FILE, 'r') as f:
+                content = f.read().strip()
+                if not content:  # Empty file
+                    logging.warning("alerts.json is empty - starting fresh")
+                    return {}
+                return json.loads(content)
+        except (json.JSONDecodeError, FileNotFoundError) as e:
+            logging.error(f"Corrupted alerts.json: {e} - starting fresh")
+            return {}
     return {}
-
+            
 def save_alerts(alerts):
     """Save alert times to data/alerts/alerts.json."""
     with open(ALERTS_FILE, 'w') as f:
