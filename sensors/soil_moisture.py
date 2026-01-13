@@ -34,7 +34,7 @@ def read():
     """
     try:
         voltage = channel.voltage
-        logging.info(f"Soil sensor voltage: {voltage:.3f} V")
+        #logging.info(f"Soil sensor voltage: {voltage:.3f} V")
 
         # Clamp voltage to calibration range
         voltage = max(min(voltage, DRY_VOLTAGE), WET_VOLTAGE)
@@ -47,9 +47,9 @@ def read():
 
         percentage = round(percentage, 1)
 
-        logging.info(f"Soil moisture: {percentage}%")
+        #logging.info(f"Soil moisture: {percentage}%")
         return percentage
 
     except Exception as e:
-        logging.error(f"Error reading soil moisture sensor: {e}")
+        #logging.error(f"Error reading soil moisture sensor: {e}")
         return None

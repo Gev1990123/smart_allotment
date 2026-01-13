@@ -3,6 +3,7 @@ RPi.GPIO==0.7.1
 smbus2==0.4.1
 adafruit-circuitpython-ads1x15
 adafruit_ads1x15
+adafruit-circuitpython-bh1750
 
 # Web dashboard
 flask==2.3.2

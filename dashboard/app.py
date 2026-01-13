@@ -29,7 +29,7 @@ db.init_app(app)
 
 LOW_MOISTURE_THRESHOLD = 30  # %
 HIGH_TEMP_THRESHOLD = 60 # %
-LOW_LIGHT_THRESHOLD = 30 # %
+LOW_LIGHT_THRESHOLD = 2000 # Lux
 
 def log_readings_loop(interval=30): #300 = 5mintues, changed to 30 for testing. 
     """Continuously log sensor readings and create alerts"""
@@ -63,7 +63,7 @@ def log_readings_loop(interval=30): #300 = 5mintues, changed to 30 for testing.
                 db.session.add(SensorReading(sensor_type='light', value=light_val))
                 if light_val <= LOW_LIGHT_THRESHOLD:
                     db.session.add(Alert(alert_type='Low Light', sensor_name='Light', value=light_val))
-                    logging.warning(f"High Temperature Detected {temp_val}°C")
+                    logging.warning(f"Low Light Detected {light_val}")
                 db.session.commit()
                 logging.info(f"Light: {light_val}%")
             except Exception as e:
