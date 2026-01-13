@@ -7,6 +7,7 @@ import threading
 import time
 from flask import Flask, render_template, jsonify
 from flask_sqlalchemy import SQLAlchemy
+from models.db import db 
 from models.sensor_data import SensorReading
 from models.alerts import Alert
 from sensors import soil_moisture, temperature, light
@@ -16,7 +17,9 @@ app = Flask(__name__)
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(BASE_DIR, 'data', 'smart_allotment.db')}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db = SQLAlchemy(app)
+
+# === INITIALIZE DB FROM db.py ===
+db.init_app(app)
 
 LOW_MOISTURE_THRESHOLD = 30  # %
 HIGH_TEMP_THRESHOLD = 60 # %
