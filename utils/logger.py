@@ -32,3 +32,8 @@ def setup(log_file="logs/app.log"):
     logger.addHandler(console_handler)
 
     logging.info("Logging initialized")
+
+    # Werkzeug Logging
+    werkzeug_logger = logging.getLogger('werkzeug')
+    werkzeug_logger.setLevel(logging.WARNING)
+    werkzeug_logger.handlers = [logging.StreamHandler()]
