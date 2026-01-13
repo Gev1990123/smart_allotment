@@ -2,11 +2,21 @@
 import logging
 import json
 import os
-from datetime import datetime
-# import smtplib
-# from email.message import EmailMessage
+from datetime import datetime, timedelta
+import smtplib
+from email.message import EmailMessage
+from dotenv import load_dotenv
 
-ALERTS_FILE = "data/logs/alerts.json"
+load_dotenv()
+
+SMTP_USER = os.getenv('SMTP_USER')
+SMTP_PASS = os.getenv('SMTP_PASS')
+TO_EMAIL = os.getenv('TO_EMAIL')
+
+# Data Directory
+ALERTS_DIR = os.path.join(os.path.dirname(__file__), '../data/alerts')
+os.makedirs(ALERTS_DIR, exist_ok=True)
+ALERTS_FILE = os.path.join(ALERTS_DIR, 'alerts.json')
 
 def send_email_alert(subject, body, to_email):
     """
@@ -15,79 +25,125 @@ def send_email_alert(subject, body, to_email):
     msg = EmailMessage()
     msg.set_content(body)
     msg['Subject'] = subject
-    msg['From'] = 'smartallotment@example.com'
+    msg['From'] = 'monitoring@smartallotment.com'
     msg['To'] = to_email
 
-    # Replace with your SMTP settings
-    # with smtplib.SMTP('smtp.example.com', 587) as server:
-    #     server.starttls()
-    #     server.login('username', 'password')
-    #     server.send_message(msg)
+    # SMTP Settings
+    try:
+        with smtplib.SMTP('smtp.gmail.com', 587) as server:
+            server.starttls()
+            server.login(SMTP_USER, SMTP_PASS)
+            server.send_message(msg)
+        logging.info(f"✅ Email sent successfully: {subject}")
+        return True
+    
+    except smtplib.SMTPAuthenticationError:
+        logging.error("❌ Email FAILED - Invalid Gmail credentials")
+        return False
+    except smtplib.SMTPServerDisconnected:
+        logging.error("❌ Email FAILED - Server disconnected (network issue)")
+        return False
+    except Exception as e:
+        logging.error(f"❌ Email FAILED - {str(e)}")
+        return False
 
 def alert_low_moisture(sensor_name, value):
     """
     Alert for low soil moisture.
     """
+    if not should_send_alert(sensor_name, 'low_soil_moisture'):
+        logging(f"Low Soil Moisture Alert Skipped (cooldown active): {value}%")
+        return
+
     subject = f"Alert: Low Moisture ({sensor_name})"
     body = f"Soil moisture is low: {value}%"
-    
-    # Print to console
-    print(subject, body)
-    
-    # Log to app.log
-    logging.warning(f"{subject} - {body}")
+        
+    # Send email
+    send_email_alert(subject, body, TO_EMAIL)
 
-    # Add Alert
-    add_alert("Low Moisture", sensor_name, value)
-    
-    # Optionally send email
-    # send_email_alert(subject, body, "you@example.com")
+    # Update alerts.json and mark as 'sent'
+    mark_alert_sent(sensor_name, 'low_soil_moisture') 
 
 def alert_high_temperature(sensor_name, value):
     """
     Alert for high temperature.
     """
+
+    if not should_send_alert(sensor_name, 'high_temp'):
+        logging(f"High Temp Alert Skipped (cooldown active): {value}°C")
+        return
+
     subject = f"Alert: High Temperature ({sensor_name})"
     body = f"Temperature is high: {value}°C"
     
-    # Print to console
-    print(subject, body)
+    # Send email
+    send_email_alert(subject, body, TO_EMAIL)
+
+    # Update alerts.json and mark as 'sent'
+    mark_alert_sent(sensor_name, 'high_temp') 
+
+def alert_low_temperature(sensor_name, value):
+    """
+    Alert for low temperature.
+    """
+
+    if not should_send_alert(sensor_name, 'low_temp'):
+        logging(f"Low Temp Alert Skipped (cooldown active): {value}°C")
+        return
+
+    subject = f"Alert: Low Temperature ({sensor_name})"
+    body = f"Temperature is Low: {value}°C"
     
-    # Log to app.log
-    logging.warning(f"{subject} - {body}")
+    # Send email
+    send_email_alert(subject, body, TO_EMAIL)
 
-    # Add Alert
-    add_alert("High Temperature", sensor_name, value)
+    # Update alerts.json and mark as 'sent'
+    mark_alert_sent(sensor_name, 'low_temp') 
+
+def alert_low_light(sensor_name, value):
+    """
+    Alert for low light.
+    """
+
+    if not should_send_alert(sensor_name, 'low_light'):
+        logging(f"Low Light Alert Skipped (cooldown active): {value}°C")
+        return
+
+    subject = f"Alert: Low Light ({sensor_name})"
+    body = f"Light is Low: {value} Lux"
     
-    # Optionally send email
-    # send_email_alert(subject, body, "you@example.com")
+    # Send email
+    send_email_alert(subject, body, TO_EMAIL)
 
+    # Update alerts.json and mark as 'sent'
+    mark_alert_sent(sensor_name, 'low_light') 
 
-def _load_alerts():
-    """Load all alerts from the JSON file."""
-    if not os.path.exists(ALERTS_FILE):
-        return []
-    try:
-        with open(ALERTS_FILE, "r") as f:
+def load_alerts():
+    """Load last alert times from data/alerts/alerts.json."""
+    if os.path.exists(ALERTS_FILE):
+        with open(ALERTS_FILE, 'r') as f:
             return json.load(f)
-    except Exception:
-        return []
+    return {}
 
-def _save_alert(alert):
-    """Append a new alert to the file."""
-    alerts = _load_alerts()
-    alerts.append(alert)  # keep all alerts
-    os.makedirs(os.path.dirname(ALERTS_FILE), exist_ok=True)
-    with open(ALERTS_FILE, "w") as f:
-        json.dump(alerts, f, indent=2)
+def save_alerts(alerts):
+    """Save alert times to data/alerts/alerts.json."""
+    with open(ALERTS_FILE, 'w') as f:
+        json.dump(alerts, f)
 
-def add_alert(alert_type, sensor_name, value):
-    """Add a new alert (stored permanently)."""
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    alert = {
-        "time": timestamp,
-        "type": alert_type,
-        "sensor": sensor_name,
-        "value": value
-    }
-    _save_alert(alert)
+def should_send_alert(sensor_name, alert_type):
+    alerts = load_alerts()
+    key = f"{sensor_name}_{alert_type}"
+    
+    if key not in alerts:
+        return True
+    
+    last_time = datetime.fromisoformat(alerts[key])
+    if datetime.now() - last_time > timedelta(hours=4):
+        return True
+    return False
+
+def mark_alert_sent(sensor_name, alert_type):
+    alerts = load_alerts()
+    key = f"{sensor_name}_{alert_type}"
+    alerts[key] = datetime.now().isoformat()
+    save_alerts(alerts)

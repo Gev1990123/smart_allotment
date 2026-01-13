@@ -13,6 +13,7 @@ from models.alerts import Alert
 from sensors import soil_moisture, temperature, light
 import utils.logger
 import logging
+from utils.notifications import alert_high_temperature, alert_low_light, alert_low_temperature, alert_low_moisture
 
 # == SETUP LOGGING ===
 utils.logger.setup()
@@ -40,9 +41,10 @@ def log_readings_loop(interval=30): #300 = 5mintues, changed to 30 for testing.
             try:
                 soil_val = soil_moisture.read()
                 db.session.add(SensorReading(sensor_type='soil_moisture', value=soil_val))
-                if soil_val < LOW_MOISTURE_THRESHOLD:
+                if soil_val < LOW_MOISTURE_THRESHOLD:                    
                     db.session.add(Alert(alert_type='Low Moisture', sensor_name='Soil', value=soil_val))
                     logging.warning(f"Low Moisture Detected {soil_val}%")
+                    alert_low_moisture('Allotment Soil Moisture', soil_val)
                 db.session.commit()
                 logging.info(f"Soil moisture: {soil_val}%")
             except Exception as e:
@@ -54,9 +56,11 @@ def log_readings_loop(interval=30): #300 = 5mintues, changed to 30 for testing.
                 if temp_val >= HIGH_TEMP_THRESHOLD:
                     db.session.add(Alert(alert_type='High Temperature', sensor_name='Temp', value=temp_val))
                     logging.warning(f"High Temperature Detected {temp_val}°C")
+                    alert_high_temperature('Allotment High Temp', temp_val)
                 if temp_val <= LOW_TEMP_THRESHOLD:
                     db.session.add(Alert(alert_type='Low Temperature', sensor_name='Temp', value=temp_val))    
                     logging.warning(f"Low Temperature Detected {temp_val}°C")
+                    alert_low_temperature('Allotment Low Temp', temp_val)
                 db.session.commit()
                 logging.info(f"Temperature: {temp_val}°C")
             except Exception as e:
@@ -68,6 +72,7 @@ def log_readings_loop(interval=30): #300 = 5mintues, changed to 30 for testing.
                 if light_val <= LOW_LIGHT_THRESHOLD:
                     db.session.add(Alert(alert_type='Low Light', sensor_name='Light', value=light_val))
                     logging.warning(f"Low Light Detected {light_val}")
+                    alert_low_light('Allotment Low Light', light_val)
                 db.session.commit()
                 logging.info(f"Light Lux Value: {light_val} ")
             except Exception as e:
