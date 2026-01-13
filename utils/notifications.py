@@ -8,9 +8,6 @@ import smtplib
 from email.message import EmailMessage
 from dotenv import load_dotenv
 
-# == SETUP LOGGING ===
-utils.logger.setup()
-
 load_dotenv()
 
 SMTP_USER = os.getenv('SMTP_USER')
