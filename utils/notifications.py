@@ -142,23 +142,16 @@ def save_alerts(alerts):
 def should_send_alert(sensor_name, alert_type):
     alerts = load_alerts()
     key = f"{sensor_name}_{alert_type}"
-
-    logging.info(f"DEBUG: Checking cooldown for {key}")
     
     if key not in alerts:
-        logging.info(f"DEBUG: No previous alert for {key} -> SEND")
         return True
     
     last_time = datetime.fromisoformat(alerts[key])
     time_diff = datetime.now() - last_time
     hours_diff = time_diff.total_seconds() / 3600
 
-    logging.info(f"DEBUG: Last alert {hours_diff:.1f}hrs ago (threshold 4hrs)")
-
     if time_diff > timedelta(hours=4):
-        logging.info(f"DEBUG: Cooldown expired for {key} -> SEND")
         return True
-    logging.info(f"DEBUG: Cooldown active for {key} -> SKIP")
     return False
 
 def mark_alert_sent(sensor_name, alert_type):

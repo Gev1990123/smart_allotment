@@ -70,15 +70,9 @@ def log_readings_loop(interval=30): #300 = 5mintues, changed to 30 for testing.
                 light_val = light.read()
                 db.session.add(SensorReading(sensor_type='light', value=light_val))
                 if light_val <= LOW_LIGHT_THRESHOLD:
-                    try: 
-                        logging.info("🚨 CALLING alert_low_light()")
-                        alert_low_light('Allotment Light', light_val)
-                        logging.info("✅ alert_low_light() COMPLETED")
-                    except Exception as e:
-                        logging.error(f"💥 alert_low_light CRASHED: {e}")
-                    
                     db.session.add(Alert(alert_type='Low Light', sensor_name='Light', value=light_val))
                     logging.warning(f"Low Light Detected {light_val}")
+                    alert_low_light('Allotment Light', light_val)
                 db.session.commit()
                 logging.info(f"Light Lux Value: {light_val} ")
             except Exception as e:
