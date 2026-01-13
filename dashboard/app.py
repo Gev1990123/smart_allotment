@@ -28,7 +28,8 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
 LOW_MOISTURE_THRESHOLD = 30  # %
-HIGH_TEMP_THRESHOLD = 60 # %
+HIGH_TEMP_THRESHOLD = 30 # °C
+LOW_TEMP_THRESHOLD = 0 # °C
 LOW_LIGHT_THRESHOLD = 2000 # Lux
 
 def log_readings_loop(interval=30): #300 = 5mintues, changed to 30 for testing. 
@@ -53,6 +54,9 @@ def log_readings_loop(interval=30): #300 = 5mintues, changed to 30 for testing.
                 if temp_val >= HIGH_TEMP_THRESHOLD:
                     db.session.add(Alert(alert_type='High Temperature', sensor_name='Temp', value=temp_val))
                     logging.warning(f"High Temperature Detected {temp_val}°C")
+                if temp_val <= LOW_TEMP_THRESHOLD:
+                    db.session.add(Alert(alert_type='Low Temperature', sensor_name='Temp', value=temp_val))    
+                    logging.warning(f"Low Temperature Detected {temp_val}°C")
                 db.session.commit()
                 logging.info(f"Temperature: {temp_val}°C")
             except Exception as e:
