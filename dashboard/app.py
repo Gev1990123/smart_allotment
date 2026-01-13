@@ -33,7 +33,7 @@ LOW_LIGHT_THRESHOLD = 30 # %
 
 def log_readings_loop(interval=300):
     """Continuously log sensor readings and create alerts"""
-    logger.info("Sensor logging loop started") 
+    logging.info("Sensor logging loop started") 
     with app.app_context():
         while True:
             try:
@@ -41,30 +41,33 @@ def log_readings_loop(interval=300):
                 db.session.add(SensorReading(sensor_type='soil_moisture', value=soil_val))
                 if soil_val < LOW_MOISTURE_THRESHOLD:
                     db.session.add(Alert(alert_type='Low Moisture', sensor_name='Soil', value=soil_val))
+                    logging.warning(f"Low Moisture Detected {soil_val}%")
                 db.session.commit()
-                print(f"Soil moisture: {soil_val}%")
+                logging.info(f"Soil moisture: {soil_val}%")
             except Exception as e:
-                print("Error logging soil:", e)
+                logging.error("Error logging soil:", e)
 
             try:
                 temp_val = temperature.read()
                 db.session.add(SensorReading(sensor_type='temperature', value=temp_val))
                 if temp_val >= HIGH_TEMP_THRESHOLD:
                     db.session.add(Alert(alert_type='High Temperature', sensor_name='Temp', value=temp_val))
+                    logging.warning(f"High Temperature Detected {temp_val}°C")
                 db.session.commit()
-                print(f"Temperature: {temp_val}°C")
+                logging.info(f"Temperature: {temp_val}°C")
             except Exception as e:
-                print("Error logging temperature:", e)
+                logging.error("Error logging temperature:", e)
 
             try:
                 light_val = light.read()
                 db.session.add(SensorReading(sensor_type='light', value=light_val))
                 if light_val <= LOW_LIGHT_THRESHOLD:
                     db.session.add(Alert(alert_type='Low Light', sensor_name='Light', value=light_val))
+                    logging.warning(f"High Temperature Detected {temp_val}°C")
                 db.session.commit()
-                print(f"Light: {light_val}%")
+                logging.info(f"Light: {light_val}%")
             except Exception as e:
-                print("Error logging light:", e)
+                logging.error("Error logging light:", e)
 
             time.sleep(interval)
 
@@ -144,7 +147,7 @@ else:
     # Systemd service
     with app.app_context():
         db.create_all()
-        print("Smart Allotment Dashboard started on port 5000")
+        logging.info("Smart Allotment Dashboard started on port 5000")
     
     from werkzeug.serving import run_simple
     run_simple('0.0.0.0', 5000, app, use_reloader=False)
