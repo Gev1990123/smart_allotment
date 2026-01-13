@@ -65,7 +65,7 @@ def log_readings_loop(interval=30): #300 = 5mintues, changed to 30 for testing.
                     db.session.add(Alert(alert_type='Low Light', sensor_name='Light', value=light_val))
                     logging.warning(f"Low Light Detected {light_val}")
                 db.session.commit()
-                logging.info(f"Light: {light_val}%")
+                logging.info(f"Light Lux Value: {light_val} ")
             except Exception as e:
                 logging.error("Error logging light:", e)
 

@@ -18,7 +18,7 @@ async function updateCharts() {
         if (!soilChart) {
             soilChart = initChart('soilChart', 'Soil Moisture', 'green', data.soil_moisture, data.soil_labels, 100);
             tempChart = initChart('tempChart', 'Temperature', 'red', data.temperature, data.temp_labels, 50);
-            lightChart = initChart('lightChart', 'Light', 'orange', data.light, data.light_labels, 100);
+            lightChart = initChart('lightChart', 'Light', 'orange', data.light, data.light_labels, 30000);
         } else {
             function updateChart(chart, values, labels) {
                 chart.data.labels = labels;
