@@ -29,7 +29,7 @@ def send_email_alert(subject, body, to_email):
     msg = EmailMessage()
     msg.set_content(body)
     msg['Subject'] = subject
-    msg['From'] = 'monitoring@smartallotment.com'
+    msg['From'] = SMTP_USER
     msg['To'] = to_email
 
     # SMTP Settings
@@ -56,7 +56,7 @@ def alert_low_moisture(sensor_name, value):
     Alert for low soil moisture.
     """
     if not should_send_alert(sensor_name, 'low_soil_moisture'):
-        logging(f"Low Soil Moisture Alert Skipped (cooldown active): {value}%")
+        logging.info(f"Low Soil Moisture Alert Skipped (cooldown active): {value}%")
         return
 
     subject = f"Alert: Low Moisture ({sensor_name})"
@@ -74,7 +74,7 @@ def alert_high_temperature(sensor_name, value):
     """
 
     if not should_send_alert(sensor_name, 'high_temp'):
-        logging(f"High Temp Alert Skipped (cooldown active): {value}°C")
+        logging.info(f"High Temp Alert Skipped (cooldown active): {value}°C")
         return
 
     subject = f"Alert: High Temperature ({sensor_name})"
@@ -92,7 +92,7 @@ def alert_low_temperature(sensor_name, value):
     """
 
     if not should_send_alert(sensor_name, 'low_temp'):
-        logging(f"Low Temp Alert Skipped (cooldown active): {value}°C")
+        logging.info(f"Low Temp Alert Skipped (cooldown active): {value}°C")
         return
 
     subject = f"Alert: Low Temperature ({sensor_name})"
@@ -109,8 +109,10 @@ def alert_low_light(sensor_name, value):
     Alert for low light.
     """
 
+    logging.info("Alert Low Light, Processing Email")
+
     if not should_send_alert(sensor_name, 'low_light'):
-        logging(f"Low Light Alert Skipped (cooldown active): {value}°C")
+        logging.info(f"Low Light Alert Skipped (cooldown active): {value}°C")
         return
 
     subject = f"Alert: Low Light ({sensor_name})"
