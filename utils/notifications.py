@@ -1,5 +1,5 @@
 # utils/notifications.py
-import utils.logger
+from utils.logger import setup
 import logging
 import os
 from datetime import datetime, timedelta
@@ -16,6 +16,9 @@ SMTP_USER = os.getenv('SMTP_USER')
 SMTP_PASS = os.getenv('SMTP_PASS')
 TO_EMAIL = os.getenv('TO_EMAIL')
 ADMIN_EMAIL = os.getenv('ADMIN_EMAIL')
+
+## Setup Logging
+setup("notifications.log")
 
 def send_email_alert(subject, body, to_email=None, admin=False):
     """
