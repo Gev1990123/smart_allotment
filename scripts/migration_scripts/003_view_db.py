@@ -53,8 +53,8 @@ cursor.execute("""
     GROUP BY sensor_name
     ORDER BY last_notified DESC
 """)
-print(" Sensor    | Last Notified       | Alert Type          | Value")
-print(" ----------|---------------------|---------------------|------")
+print(" Sensor    | Last Notified       | Alert Type           | Value")
+print(" ----------|---------------------|----------------------|------")
 for row in cursor.fetchall():
     sensor, notified, alert_type, value, ts = row
     # Format datetime to fit column (cut microseconds)
