@@ -47,8 +47,6 @@ def setup(log_file="app.log"):
     logger.addHandler(file_handler)
     logger.addHandler(console_handler)
 
-    logging.info("Logging initialized")
-
     # Werkzeug Logging
     werkzeug_logger = logging.getLogger('werkzeug')
     werkzeug_logger.setLevel(logging.WARNING)

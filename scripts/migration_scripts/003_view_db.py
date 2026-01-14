@@ -2,7 +2,15 @@ import sqlite3
 import os
 
 # Paths
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Calculate project root
+current_dir = os.path.abspath(os.path.dirname(__file__))
+while os.path.basename(current_dir) != 'smart_allotment':
+    parent = os.path.dirname(current_dir)
+    if parent == current_dir:
+        raise RuntimeError("Could not find smart_allotment project root")
+    current_dir = parent
+
+PROJECT_ROOT = current_dir
 DB_PATH = os.path.join(PROJECT_ROOT, 'data', 'smart_allotment.db')
 
 print("Smart Allotment Database Viewer")
