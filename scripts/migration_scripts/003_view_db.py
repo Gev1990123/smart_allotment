@@ -35,31 +35,31 @@ cursor.execute("""
     ORDER BY timestamp DESC 
     LIMIT 10
 """)
-print("  Type          | Sensor | Value | Time                | Last Notified")
-print("  ---------------|--------|-------|---------------------|--------------")
+print("  Type          | Sensor | Value | Time                | Last Notified | Status    |")
+print("  ---------------|--------|-------|---------------------|--------------|-----------|")
 for row in cursor.fetchall():
-    alert_type, sensor, value, ts, notified = row
+    alert_type, sensor, value, ts, notified, status = row
     notified = notified or "None"
-    print(f"  {alert_type[:13]:<13} | {sensor}   | {value:>5} | {ts} | {notified}")
+    print(f"  {alert_type[:13]:<13} | {sensor}   | {value:>5} | {ts} | {notified} | {status}")
 
 # 3. LAST NOTIFIED EVENTS PER SENSOR (most recent notification per sensor)
 print("\n3. LAST NOTIFIED EVENTS PER SENSOR:")
 cursor.execute("""
     SELECT DISTINCT sensor_name, 
            MAX(last_notified) as last_notified,
-           alert_type, value, timestamp
+           alert_type, value, timestamp, status
     FROM alerts 
     WHERE last_notified IS NOT NULL
     GROUP BY sensor_name
     ORDER BY last_notified DESC
 """)
-print(" Sensor    | Last Notified       | Alert Type           | Value")
-print(" ----------|---------------------|----------------------|------")
+print(" Sensor    | Last Notified       | Alert Type           | Value | Status    |")
+print(" ----------|---------------------|----------------------|-------|-----------|")
 for row in cursor.fetchall():
-    sensor, notified, alert_type, value, ts = row
+    sensor, notified, alert_type, value, ts, status = row
     # Format datetime to fit column (cut microseconds)
     notified_short = str(notified).split('.')[0] if notified else "None"
-    print(f" {sensor:<9} | {notified_short:<17} | {alert_type:<20} | {value:>5.1f}")
+    print(f" {sensor:<9} | {notified_short:<17} | {alert_type:<20} | {value:>5.1f} | {status:<10}")
 
 # 4. Show recent sensor readings (last 5 per sensor)
 print("\n4. RECENT SENSOR READINGS (last 5 each):")
@@ -82,19 +82,19 @@ print("\n5. LAST NOTIFIED BY ALERT TYPE:")
 cursor.execute("""
     SELECT alert_type, sensor_name,
            MAX(last_notified) as last_notified,
-           MAX(value) as latest_value
+           MAX(value) as latest_value, status
     FROM alerts 
     WHERE last_notified IS NOT NULL
     GROUP BY alert_type, sensor_name
     ORDER BY last_notified DESC
     LIMIT 10
 """)
-print(" Alert Type           | Sensor | Time                | Value")
-print(" ---------------------|--------|---------------------|------")
+print(" Alert Type           | Sensor | Time                | Value | Status   |")
+print(" ---------------------|--------|---------------------|-------|----------| ")
 for row in cursor.fetchall():
-    alert_type, sensor, notified, value = row
+    alert_type, sensor, notified, value, status = row
     notified_short = str(notified).split('.')[0] if notified else "None"
-    print(f" {alert_type:<20} | {sensor:<6} | {notified_short:<17} | {value:>5.1f}")
+    print(f" {alert_type:<20} | {sensor:<6} | {notified_short:<17} | {value:>5.1f} | {status:<10}")
 
 # 6. Show record counts
 print("\n6. RECORD COUNTS:")
