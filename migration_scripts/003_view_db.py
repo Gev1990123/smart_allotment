@@ -56,5 +56,15 @@ cursor.execute("SELECT 'alerts' as table_name, COUNT(*) as count FROM alerts UNI
 for row in cursor.fetchall():
     print(f"  {row[0]}: {row[1]} records")
 
+# 5. Database file size (SQL + filesystem)
+print("\n5. DATABASE SIZE:")
+stat_size = os.path.getsize(DB_PATH)
+cursor.execute("SELECT page_count * page_size AS db_size FROM pragma_page_count(), pragma_page_size()")
+sql_size = cursor.fetchone()[0]
+
+size_mb = stat_size / (1024 * 1024)
+print(f" File size:   {size_mb:.1f} MB ({stat_size:,} bytes)")
+print(f" SQL size:   {sql_size / (1024*1024):.1f} MB ({sql_size:,} bytes)")
+
 conn.close()
 print("\nDone!")
