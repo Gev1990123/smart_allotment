@@ -94,7 +94,7 @@ print(" --------------------|--------|---------------------|------")
 for row in cursor.fetchall():
     alert_type, sensor, notified, value = row
     notified_short = str(notified).split('.')[0] if notified else "None"
-    print(f" {alert_type[:20]:<20} | {sensor:<6} | {notified_short:<17} | {value:>5.1f}")
+    print(f" {alert_type:<20} | {sensor:<6} | {notified_short:<17} | {value:>5.1f}")
 
 # 6. Show record counts
 print("\n6. RECORD COUNTS:")
