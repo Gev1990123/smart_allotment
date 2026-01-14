@@ -54,7 +54,7 @@ cursor.execute("""
     ORDER BY last_notified DESC
 """)
 print("  Sensor    | Last Notified | Alert Type  | Value")
-print("  ---------|----------------|------------|------")
+print("  ----------|---------------|-------------|------")
 for row in cursor.fetchall():
     sensor, notified, alert_type, value, ts = row
     # Format datetime to fit column (cut microseconds)
@@ -90,7 +90,7 @@ cursor.execute("""
     LIMIT 10
 """)
 print("  Alert Type    | Sensor | Time         | Value")
-print("  -------------|--------|-------------|------")
+print("  --------------|--------|--------------|------")
 for row in cursor.fetchall():
     alert_type, sensor, notified, value = row
     # Format datetime to fit column
