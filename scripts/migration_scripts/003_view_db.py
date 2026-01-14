@@ -42,8 +42,25 @@ for row in cursor.fetchall():
     notified = notified or "None"
     print(f"  {alert_type[:13]:<13} | {sensor}   | {value:>5} | {ts} | {notified}")
 
-# 3. Show recent sensor readings (last 5 per sensor)
-print("\n3. RECENT SENSOR READINGS (last 5 each):")
+# 3. LAST NOTIFIED EVENTS PER SENSOR (most recent notification per sensor)
+print("\n3. LAST NOTIFIED EVENTS PER SENSOR:")
+cursor.execute("""
+    SELECT DISTINCT sensor_name, 
+           MAX(last_notified) as last_notified,
+           alert_type, value, timestamp
+    FROM alerts 
+    WHERE last_notified IS NOT NULL
+    GROUP BY sensor_name
+    ORDER BY last_notified DESC
+""")
+print("  Sensor     | Last Notified       | Alert Type     | Value")
+print("  ----------|---------------------|----------------|------")
+for row in cursor.fetchall():
+    sensor, notified, alert_type, value, ts = row
+    print(f"  {sensor:<10} | {notified} | {alert_type[:14]:<14} | {value}")
+
+# 4. Show recent sensor readings (last 5 per sensor)
+print("\n4. RECENT SENSOR READINGS (last 5 each):")
 for sensor_type in ['soil_moisture', 'temperature', 'light']:
     print(f"\n  {sensor_type.upper()}:")
     cursor.execute("""
@@ -58,14 +75,32 @@ for sensor_type in ['soil_moisture', 'temperature', 'light']:
     for row in cursor.fetchall():
         print(f"    {row[1]:>5} | {row[2]}")
 
-# 4. Show record counts
-print("\n4. RECORD COUNTS:")
+# 5. Last Notified per sensor (unique alerts)
+print("\n5. LAST NOTIFIED BY ALERT TYPE:")
+cursor.execute("""
+    SELECT alert_type, sensor_name,
+           MAX(last_notified) as last_notified,
+           MAX(value) as latest_value
+    FROM alerts 
+    WHERE last_notified IS NOT NULL
+    GROUP BY alert_type, sensor_name
+    ORDER BY last_notified DESC
+    LIMIT 10
+""")
+print("  Alert Type     | Sensor | Time              | Value")
+print("  --------------|--------|-------------------|------")
+for row in cursor.fetchall():
+    alert_type, sensor, notified, value = row
+    print(f"  {alert_type[:13]:<13} | {sensor} | {notified} | {value}")
+
+# 6. Show record counts
+print("\n6. RECORD COUNTS:")
 cursor.execute("SELECT 'alerts' as table_name, COUNT(*) as count FROM alerts UNION ALL SELECT 'sensor_readings', COUNT(*) FROM sensor_readings")
 for row in cursor.fetchall():
     print(f"  {row[0]}: {row[1]} records")
 
-# 5. Database file size (SQL + filesystem)
-print("\n5. DATABASE SIZE:")
+# 7. Database file size (SQL + filesystem)
+print("\n7. DATABASE SIZE:")
 stat_size = os.path.getsize(DB_PATH)
 cursor.execute("SELECT page_count * page_size AS db_size FROM pragma_page_count(), pragma_page_size()")
 sql_size = cursor.fetchone()[0]
