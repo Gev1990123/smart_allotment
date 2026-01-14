@@ -40,8 +40,8 @@ def log_readings_loop(interval=30): #300 = 5mintues, changed to 30 for testing.
     with app.app_context():
         while True:
             try:
-                sensor_name = 'Soil'
                 soil_val = soil_moisture.read()
+                sensor_name = 'Soil'
                 db.session.add(SensorReading(sensor_type='soil_moisture', value=soil_val))
                 if soil_val < LOW_MOISTURE_THRESHOLD:                    
                     db.session.add(Alert(alert_type='Low Moisture', sensor_name=sensor_name, value=soil_val))
@@ -77,20 +77,24 @@ def log_readings_loop(interval=30): #300 = 5mintues, changed to 30 for testing.
                 # CHECK if already alerting
                 existing_alert = Alert.query.filter_by(sensor_name=sensor_name, alert_type='Low Light', status='active').first()
 
+
                 if light_val <= LOW_LIGHT_THRESHOLD:
                     if not existing_alert:
                         db.session.add(Alert(alert_type='Low Light', sensor_name=sensor_name, value=light_val))
-                        logging.warning(f"Low Light Detected {light_val}")
-                        alert_low_light(sensor_name, light_val)
-
-                    elif existing_alert and light_val > LOW_LIGHT_THRESHOLD:
-                        existing_alert.status = 'resolved'
                         db.session.commit()
-                        logging.info(f"💡 Low Light RESOLVED: {light_val}")
+                        logging.warning(f"NEW Low Light Alert: {light_val}")
 
+
+                    alert_low_light(sensor_name, light_val)
+
+                elif existing_alert and light_val > LOW_LIGHT_THRESHOLD:
+                    existing_alert.status = 'resolved'
                     db.session.commit()
-                    
-                logging.info(f"Light Lux Value: {light_val} ")
+                    logging.info(f"Low Light RESOLVED: {light_val}")
+
+                db.session.commit()
+                logging.info(f"Light: {light_val}")
+
             except Exception as e:
                 logging.error("Error logging light:", e)
 
