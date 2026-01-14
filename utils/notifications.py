@@ -141,10 +141,11 @@ def should_send_alert(sensor_name, alert_type):
         return False
 
     with current_app.app_context():
+        # CHANGE: order_by(Alert.last_notified.desc()) → order_by(Alert.id.asc())
         last_alert = Alert.query.filter_by(
             sensor_name=sensor_name, 
             alert_type=real_type
-        ).order_by(Alert.last_notified.desc()).first()
+        ).order_by(Alert.last_notified.asc()).first()
         
         if not last_alert or not last_alert.last_notified:
             logging.info("No previous alert found → SEND")
