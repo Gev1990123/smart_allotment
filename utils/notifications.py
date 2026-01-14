@@ -135,6 +135,7 @@ def should_send_alert(sensor_name, alert_type):
     # Check database for last notification 
     
     real_type = ALERT_TYPES.get(alert_type)
+    logging.info(f"Checking cooldown: {sensor_name}/{alert_type} → {real_type}")
     if not real_type:
         logging.error(f"Unknown alert_type: {alert_type}")
         return False
@@ -146,9 +147,11 @@ def should_send_alert(sensor_name, alert_type):
         ).order_by(Alert.last_notified.desc()).first()
         
         if not last_alert or not last_alert.last_notified:
+            logging.info("No previous alert found → SEND")
             return True
         
         hours_diff = (datetime.utcnow() - last_alert.last_notified).total_seconds() / 3600
+        logging.info(f"Hours since last alert: {hours_diff:.1f}")
         return hours_diff > 4
 
 def mark_alert_sent(sensor_name, alert_type):
@@ -160,13 +163,13 @@ def mark_alert_sent(sensor_name, alert_type):
         return False
 
     with current_app.app_context():
-        latest_alert = Alert.query.filter_by(
+        # Update ALL alerts for this sensor/type that haven't been notified
+        result = Alert.query.filter_by(
             sensor_name=sensor_name, 
             alert_type=real_type
-        ).order_by(Alert.id.desc()).first()
-        
-        if latest_alert:
-            latest_alert.last_notified = datetime.utcnow()
-            db.session.commit()
-            return True
-        return False
+        ).filter(Alert.last_notified.is_(None)).update({
+            Alert.last_notified: datetime.utcnow()
+        })
+        db.session.commit()
+        logging.info(f"✅ Marked {result} alerts as notified: {sensor_name}/{real_type}")
+        return result > 0
