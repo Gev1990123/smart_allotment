@@ -34,7 +34,7 @@ HIGH_TEMP_THRESHOLD = 30 # °C
 LOW_TEMP_THRESHOLD = 0 # °C
 LOW_LIGHT_THRESHOLD = 2000 # Lux
 
-def log_readings_loop(interval=3000): #300 = 5mintues, changed to 30 for testing. 
+def log_readings_loop(interval=30): #300 = 5mintues, changed to 30 for testing. 
     """Continuously log sensor readings and create alerts"""
     logging.info("Sensor logging loop started") 
     with app.app_context():

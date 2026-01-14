@@ -6,9 +6,9 @@ from datetime import datetime, timedelta
 import smtplib
 from email.message import EmailMessage
 from dotenv import load_dotenv
-from models.alerts import Alert
 from flask import current_app
 from models.db import db
+from models.alerts import Alert
 
 load_dotenv()
 
@@ -19,6 +19,15 @@ ADMIN_EMAIL = os.getenv('ADMIN_EMAIL')
 
 ## Setup Logging
 setup("notifications.log")
+
+# Type mapping
+ALERT_TYPES = {
+    'low_soil_moisture': 'Low Moisture',
+    'high_temp': 'High Temperature', 
+    'low_temp': 'Low Temperature',
+    'low_light': 'Low Light'
+}
+
 
 def send_email_alert(subject, body, to_email=None, admin=False):
     """
@@ -123,14 +132,17 @@ def alert_low_light(sensor_name, value):
     mark_alert_sent(sensor_name, 'low_light') 
 
 def should_send_alert(sensor_name, alert_type):
-    # Check database for last notification time
+    # Check database for last notification 
+    
+    real_type = ALERT_TYPES.get(alert_type)
+    if not real_type:
+        logging.error(f"Unknown alert_type: {alert_type}")
+        return False
+
     with current_app.app_context():
         last_alert = Alert.query.filter_by(
             sensor_name=sensor_name, 
-            alert_type={'low_soil_moisture': 'Low Moisture', 
-                    'high_temp': 'High Temperature', 
-                    'low_temp': 'Low Temperature', 
-                    'low_light': 'Low Light'}[alert_type]
+            alert_type=real_type
         ).order_by(Alert.last_notified.desc()).first()
         
         if not last_alert or not last_alert.last_notified:
@@ -141,17 +153,20 @@ def should_send_alert(sensor_name, alert_type):
 
 def mark_alert_sent(sensor_name, alert_type):
     # Update LAST alert record with notification time
+
+    real_type = ALERT_TYPES.get(alert_type)
+    if not real_type:
+        logging.error(f"Unknown alert_type: {alert_type}")
+        return False
+
     with current_app.app_context():
-        real_alert_type = {'low_soil_moisture': 'Low Moisture', 
-                        'high_temp': 'High Temperature', 
-                        'low_temp': 'Low Temperature', 
-                        'low_light': 'Low Light'}[alert_type]
-        
         latest_alert = Alert.query.filter_by(
             sensor_name=sensor_name, 
-            alert_type=real_alert_type
+            alert_type=real_type
         ).order_by(Alert.id.desc()).first()
         
         if latest_alert:
             latest_alert.last_notified = datetime.utcnow()
             db.session.commit()
+            return True
+        return False
