@@ -34,34 +34,36 @@ HIGH_TEMP_THRESHOLD = 30 # °C
 LOW_TEMP_THRESHOLD = 0 # °C
 LOW_LIGHT_THRESHOLD = 2000 # Lux
 
-def log_readings_loop(interval=3000): #300 = 5mintues, changed to 30 for testing. 
+def log_readings_loop(interval=30): #300 = 5mintues, changed to 30 for testing. 
     """Continuously log sensor readings and create alerts"""
     logging.info("Sensor logging loop started") 
     with app.app_context():
         while True:
             try:
+                sensor_name = 'Soil'
                 soil_val = soil_moisture.read()
                 db.session.add(SensorReading(sensor_type='soil_moisture', value=soil_val))
                 if soil_val < LOW_MOISTURE_THRESHOLD:                    
-                    db.session.add(Alert(alert_type='Low Moisture', sensor_name='Soil', value=soil_val))
+                    db.session.add(Alert(alert_type='Low Moisture', sensor_name=sensor_name, value=soil_val))
                     logging.warning(f"Low Moisture Detected {soil_val}%")
-                    alert_low_moisture('Soil', soil_val)
+                    alert_low_moisture(sensor_name, soil_val)
                 db.session.commit()
                 logging.info(f"Soil moisture: {soil_val}%")
             except Exception as e:
                 logging.error("Error logging soil:", e)
 
             try:
+                sensor_name = 'Temp'
                 temp_val = temperature.read()
                 db.session.add(SensorReading(sensor_type='temperature', value=temp_val))
                 if temp_val >= HIGH_TEMP_THRESHOLD:
-                    db.session.add(Alert(alert_type='High Temperature', sensor_name='Temp', value=temp_val))
+                    db.session.add(Alert(alert_type='High Temperature', sensor_name=sensor_name, value=temp_val))
                     logging.warning(f"High Temperature Detected {temp_val}°C")
-                    alert_high_temperature('Temp', temp_val)
+                    alert_high_temperature(sensor_name, temp_val)
                 if temp_val <= LOW_TEMP_THRESHOLD:
-                    db.session.add(Alert(alert_type='Low Temperature', sensor_name='Temp', value=temp_val))    
+                    db.session.add(Alert(alert_type='Low Temperature', sensor_name=sensor_name, value=temp_val))    
                     logging.warning(f"Low Temperature Detected {temp_val}°C")
-                    alert_low_temperature('Temp', temp_val)
+                    alert_low_temperature(sensor_name, temp_val)
                 db.session.commit()
                 logging.info(f"Temperature: {temp_val}°C")
             except Exception as e:
@@ -69,11 +71,12 @@ def log_readings_loop(interval=3000): #300 = 5mintues, changed to 30 for testing
 
             try:
                 light_val = light.read()
+                sensor_name = 'Light'
                 db.session.add(SensorReading(sensor_type='light', value=light_val))
                 if light_val <= LOW_LIGHT_THRESHOLD:
-                    db.session.add(Alert(alert_type='Low Light', sensor_name='Light', value=light_val))
+                    db.session.add(Alert(alert_type='Low Light', sensor_name=sensor_name, value=light_val))
                     logging.warning(f"Low Light Detected {light_val}")
-                    alert_low_light('Allotment Light', light_val)
+                    alert_low_light(sensor_name, light_val)
                 db.session.commit()
                 logging.info(f"Light Lux Value: {light_val} ")
             except Exception as e:
