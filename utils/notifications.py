@@ -141,17 +141,17 @@ def should_send_alert(sensor_name, alert_type):
         return False
 
     with current_app.app_context():
-        # CHANGE: order_by(Alert.last_notified.desc()) → order_by(Alert.id.asc())
-        last_alert = Alert.query.filter_by(
+        first_alert = Alert.query.filter_by(
             sensor_name=sensor_name, 
-            alert_type=real_type
-        ).order_by(Alert.last_notified.desc()).first()
+            alert_type=real_type,
+            status='active'  # NEW!
+        ).order_by(Alert.id.asc()).first()
         
-        if not last_alert or not last_alert.last_notified:
+        if not first_alert or not first_alert.last_notified:
             logging.info("No previous alert found → SEND")
             return True
         
-        hours_diff = (datetime.utcnow() - last_alert.last_notified).total_seconds() / 3600
+        hours_diff = (datetime.utcnow() - first_alert.last_notified).total_seconds() / 3600
         logging.info(f"Hours since last alert: {hours_diff:.1f}")
         return hours_diff > 4
 
