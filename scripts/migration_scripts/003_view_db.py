@@ -89,8 +89,8 @@ cursor.execute("""
     ORDER BY last_notified DESC
     LIMIT 10
 """)
-print("  Alert Type        | Sensor | Time              | Value")
-print("  ------------------|--------|-------------------|------")
+print("  Alert Type        | Sensor | Time                 | Value")
+print("  ------------------|--------|----------------------|------")
 for row in cursor.fetchall():
     alert_type, sensor, notified, value = row
     notified_short = str(notified).split('.')[0] if notified else "None"
