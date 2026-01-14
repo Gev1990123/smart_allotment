@@ -53,11 +53,12 @@ cursor.execute("""
     GROUP BY sensor_name
     ORDER BY last_notified DESC
 """)
-print("  Sensor     | Last Notified       | Alert Type     | Value")
-print("  ----------|---------------------|----------------|------")
+print("  Sensor    | Last Notified    | Alert Type   | Value")
+print("  ---------|------------------|-------------|------")
 for row in cursor.fetchall():
     sensor, notified, alert_type, value, ts = row
-    print(f"  {sensor:<10} | {notified} | {alert_type[:14]:<14} | {value}")
+    notified_short = str(notified)[:16] if notified else "None"
+    print(f"  {sensor:<9} | {notified_short:<16} | {alert_type[:11]:<11} | {value:>5.1f}")
 
 # 4. Show recent sensor readings (last 5 per sensor)
 print("\n4. RECENT SENSOR READINGS (last 5 each):")
@@ -91,7 +92,8 @@ print("  Alert Type     | Sensor | Time              | Value")
 print("  --------------|--------|-------------------|------")
 for row in cursor.fetchall():
     alert_type, sensor, notified, value = row
-    print(f"  {alert_type[:13]:<13} | {sensor} | {notified} | {value}")
+    notified_short = str(notified)[:16] if notified else "None"
+    print(f"  {alert_type[:13]:<13} | {sensor:<9} | {notified_short:<16} | {value:>5.1f}")
 
 # 6. Show record counts
 print("\n6. RECORD COUNTS:")
