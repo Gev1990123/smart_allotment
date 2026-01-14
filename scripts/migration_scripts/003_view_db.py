@@ -89,13 +89,12 @@ cursor.execute("""
     ORDER BY last_notified DESC
     LIMIT 10
 """)
-print("  Alert Type    | Sensor | Time         | Value")
-print("  --------------|--------|--------------|------")
+print("  Alert Type          | Sensor | Time              | Value")
+print("  --------------------|--------|-------------------|------")
 for row in cursor.fetchall():
     alert_type, sensor, notified, value = row
-    # Format datetime to fit column
-    notified_short = str(notified).split('.')[0][:16] if notified else "None"
-    print(f"  {alert_type[:12]:<12} | {sensor:<6} | {notified_short:<11} | {value:>5.1f}")
+    notified_short = str(notified).split('.')[0] if notified else "None"
+    print(f"  {alert_type[:20]:<20} | {sensor:<6} | {notified_short:<17} | {value:>5.1f}")
 
 # 6. Show record counts
 print("\n6. RECORD COUNTS:")
