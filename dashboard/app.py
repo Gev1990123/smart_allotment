@@ -123,6 +123,11 @@ def readings():
         .order_by(SensorReading.timestamp.desc()) \
         .limit(N).all()[::-1]
 
+    # Current values (latest readings)
+    soil_current = soil_vals[-1].value if soil_vals else None
+    temp_current = temp_vals[-1].value if temp_vals else None
+    light_current = light_vals[-1].value if light_vals else None
+
     soil_data = [r.value for r in soil_vals]
     soil_labels = [r.timestamp.strftime("%H:%M:%S") for r in soil_vals]
     temp_data = [r.value for r in temp_vals]
@@ -138,12 +143,15 @@ def readings():
         "soil_moisture": soil_data,
         "soil_labels": soil_labels,
         "soil_status": soil_status,
+        "soil_current": f"{soil_current}%" if soil_current is not None else "N/A",
         "temperature": temp_data,
         "temp_labels": temp_labels,
         "temp_status": temp_status,
+        "temp_current": f"{temp_current}°C" if temp_current is not None else "N/A",
         "light": light_data,
         "light_labels": light_labels,
-        "light_status": light_status
+        "light_status": light_status,
+        "light_current": f"{light_current}lx" if light_current is not None else "N/A"
     })
 
 # ---------------- STARTUP ----------------

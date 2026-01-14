@@ -75,6 +75,12 @@ function updateSensorStatus(data) {
     soilEl.className = data.soil_status.toLowerCase();    // "online" or "offline"
     tempEl.className = data.temp_status.toLowerCase();
     lightEl.className = data.light_status.toLowerCase();
+
+    // Current Level row
+    document.getElementById('soil-level').textContent = data.soil_current || 'N/A';
+    document.getElementById('temp-level').textContent = data.temp_current || 'N/A';
+    document.getElementById('light-level').textContent = data.light_current || 'N/A';
+
 }
 
 // Run updates every 5 seconds
