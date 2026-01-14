@@ -53,17 +53,40 @@ def log_readings_loop(interval=30): #300 = 5mintues, changed to 30 for testing.
                 logging.error("Error logging soil:", e)
 
             try:
-                sensor_name = 'Temp'
                 temp_val = temperature.read()
+                sensor_name = 'Temp'
                 db.session.add(SensorReading(sensor_type='temperature', value=temp_val))
+
+                # CHECK if already alerting
+                high_existing_alert = Alert.query.filter_by(sensor_name=sensor_name, alert_type='High Temperature', status='active').first()
+                low_existing_alert = Alert.query.filter_by(sensor_name=sensor_name, alert_type='Low Temperature', status='active').first()
+
                 if temp_val >= HIGH_TEMP_THRESHOLD:
-                    db.session.add(Alert(alert_type='High Temperature', sensor_name=sensor_name, value=temp_val))
-                    logging.warning(f"High Temperature Detected {temp_val}°C")
+                    if not high_existing_alert:
+                        db.session.add(Alert(alert_type='High Temperature', sensor_name=sensor_name, value=temp_val))
+                        db.session.commit()
+                        logging.warning(f"High Temperature Detected {temp_val}°C")
+                    
                     alert_high_temperature(sensor_name, temp_val)
+
+                elif high_existing_alert and temp_val <= HIGH_TEMP_THRESHOLD:
+                    high_existing_alert.status = 'resolved'
+                    db.session.commit()
+                    logging.info(f"High Temperature RESOLVED: {temp_val}")
+
                 if temp_val <= LOW_TEMP_THRESHOLD:
-                    db.session.add(Alert(alert_type='Low Temperature', sensor_name=sensor_name, value=temp_val))    
-                    logging.warning(f"Low Temperature Detected {temp_val}°C")
+                    if not low_existing_alert:
+                        db.session.add(Alert(alert_type='Low Temperature', sensor_name=sensor_name, value=temp_val))    
+                        db.session.commit()
+                        logging.warning(f"Low Temperature Detected {temp_val}°C")
+
                     alert_low_temperature(sensor_name, temp_val)
+
+                elif low_existing_alert and temp_val > HIGH_TEMP_THRESHOLD:
+                    low_existing_alert.status = 'resolved'
+                    db.session.commit()
+                    logging.info(f"Low Temperature RESOLVED: {temp_val}")
+
                 db.session.commit()
                 logging.info(f"Temperature: {temp_val}°C")
             except Exception as e:
