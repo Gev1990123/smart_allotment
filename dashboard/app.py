@@ -14,6 +14,7 @@ from sensors import soil_moisture, temperature, light
 import utils.logger
 import logging
 from utils.notifications import alert_high_temperature, alert_low_light, alert_low_temperature, alert_low_moisture
+from utils.sensor_utils import format_light_level, format_moisture, format_temperature
 
 # == SETUP LOGGING ===
 utils.logger.setup()
@@ -124,9 +125,9 @@ def readings():
         .limit(N).all()[::-1]
 
     # Current values (latest readings)
-    soil_current = soil_vals[-1].value if soil_vals else None
-    temp_current = temp_vals[-1].value if temp_vals else None
-    light_current = light_vals[-1].value if light_vals else None
+    soil_current = format_moisture(soil_vals)
+    temp_current = format_temperature(temp_vals)
+    light_current = format_light_level(light_vals)
 
     soil_data = [r.value for r in soil_vals]
     soil_labels = [r.timestamp.strftime("%H:%M:%S") for r in soil_vals]
