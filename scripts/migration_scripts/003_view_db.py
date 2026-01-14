@@ -30,7 +30,7 @@ for table in tables:
 # 2. Show recent alerts (last 10)
 print("\n2. RECENT ALERTS (last 10):")
 cursor.execute("""
-    SELECT alert_type, sensor_name, value, timestamp, last_notified 
+    SELECT alert_type, sensor_name, value, timestamp, last_notified, status 
     FROM alerts 
     ORDER BY timestamp DESC 
     LIMIT 10
