@@ -1,23 +1,20 @@
 # utils/notifications.py
 import utils.logger
 import logging
-import json
 import os
 from datetime import datetime, timedelta
 import smtplib
 from email.message import EmailMessage
 from dotenv import load_dotenv
+from models.alerts import Alert
+from flask import current_app
+from models.db import db
 
 load_dotenv()
 
 SMTP_USER = os.getenv('SMTP_USER')
 SMTP_PASS = os.getenv('SMTP_PASS')
 TO_EMAIL = os.getenv('TO_EMAIL')
-
-# Data Directory
-ALERTS_DIR = os.path.join(os.path.dirname(__file__), '../data/alerts')
-os.makedirs(ALERTS_DIR, exist_ok=True)
-ALERTS_FILE = os.path.join(ALERTS_DIR, 'alerts.json')
 
 def send_email_alert(subject, body, to_email):
     """
@@ -119,43 +116,36 @@ def alert_low_light(sensor_name, value):
     # Update alerts.json and mark as 'sent'
     mark_alert_sent(sensor_name, 'low_light') 
 
-def load_alerts():
-    """Load last alert times from data/alerts/alerts.json."""
-    if os.path.exists(ALERTS_FILE):
-        try: 
-            with open(ALERTS_FILE, 'r') as f:
-                content = f.read().strip()
-                if not content:  # Empty file
-                    logging.warning("alerts.json is empty - starting fresh")
-                    return {}
-                return json.loads(content)
-        except (json.JSONDecodeError, FileNotFoundError) as e:
-            logging.error(f"Corrupted alerts.json: {e} - starting fresh")
-            return {}
-    return {}
-            
-def save_alerts(alerts):
-    """Save alert times to data/alerts/alerts.json."""
-    with open(ALERTS_FILE, 'w') as f:
-        json.dump(alerts, f)
-
 def should_send_alert(sensor_name, alert_type):
-    alerts = load_alerts()
-    key = f"{sensor_name}_{alert_type}"
-    
-    if key not in alerts:
-        return True
-    
-    last_time = datetime.fromisoformat(alerts[key])
-    time_diff = datetime.now() - last_time
-    hours_diff = time_diff.total_seconds() / 3600
-
-    if time_diff > timedelta(hours=4):
-        return True
-    return False
+    # Check database for last notification time
+    with current_app.app_context():
+        last_alert = Alert.query.filter_by(
+            sensor_name=sensor_name, 
+            alert_type={'low_soil_moisture': 'Low Moisture', 
+                    'high_temp': 'High Temperature', 
+                    'low_temp': 'Low Temperature', 
+                    'low_light': 'Low Light'}[alert_type]
+        ).order_by(Alert.last_notified.desc()).first()
+        
+        if not last_alert or not last_alert.last_notified:
+            return True
+        
+        hours_diff = (datetime.utcnow() - last_alert.last_notified).total_seconds() / 3600
+        return hours_diff > 4
 
 def mark_alert_sent(sensor_name, alert_type):
-    alerts = load_alerts()
-    key = f"{sensor_name}_{alert_type}"
-    alerts[key] = datetime.now().isoformat()
-    save_alerts(alerts)
+    # Update LAST alert record with notification time
+    with current_app.app_context():
+        real_alert_type = {'low_soil_moisture': 'Low Moisture', 
+                        'high_temp': 'High Temperature', 
+                        'low_temp': 'Low Temperature', 
+                        'low_light': 'Low Light'}[alert_type]
+        
+        latest_alert = Alert.query.filter_by(
+            sensor_name=sensor_name, 
+            alert_type=real_alert_type
+        ).order_by(Alert.id.desc()).first()
+        
+        if latest_alert:
+            latest_alert.last_notified = datetime.utcnow()
+            db.session.commit()

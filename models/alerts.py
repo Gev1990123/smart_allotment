@@ -9,6 +9,7 @@ class Alert(db.Model):
     alert_type = db.Column(db.String(50))
     sensor_name = db.Column(db.String(50))
     value = db.Column(db.Float)
+    last_notified = db.Column(db.DateTime, nullable=True)
 
     def __repr__(self):
         return f"<Alert {self.alert_type} {self.sensor_name}={self.value} at {self.timestamp}>"
