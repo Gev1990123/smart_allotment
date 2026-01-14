@@ -17,3 +17,6 @@ paho-mqtt==1.6.1
 
 # Environmental Variables
 python-dotenv
+
+# System Monitoring
+psutil

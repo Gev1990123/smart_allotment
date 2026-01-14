@@ -15,8 +15,9 @@ load_dotenv()
 SMTP_USER = os.getenv('SMTP_USER')
 SMTP_PASS = os.getenv('SMTP_PASS')
 TO_EMAIL = os.getenv('TO_EMAIL')
+ADMIN_EMAIL = os.getenv('ADMIN_EMAIL')
 
-def send_email_alert(subject, body, to_email):
+def send_email_alert(subject, body, to_email=None, admin=False):
     """
     Send an email alert.
     """
@@ -24,7 +25,9 @@ def send_email_alert(subject, body, to_email):
     msg.set_content(body)
     msg['Subject'] = subject
     msg['From'] = SMTP_USER
-    msg['To'] = to_email
+
+    recipient = ADMIN_EMAIL if admin else to_email
+    msg['To'] = recipient
 
     # SMTP Settings
     try:
