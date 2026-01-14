@@ -53,12 +53,13 @@ cursor.execute("""
     GROUP BY sensor_name
     ORDER BY last_notified DESC
 """)
-print("  Sensor    | Last Notified    | Alert Type   | Value")
-print("  ---------|------------------|-------------|------")
+print("  Sensor    | Last Notified | Alert Type  | Value")
+print("  ---------|----------------|------------|------")
 for row in cursor.fetchall():
     sensor, notified, alert_type, value, ts = row
-    notified_short = str(notified)[:16] if notified else "None"
-    print(f"  {sensor:<9} | {notified_short:<16} | {alert_type[:11]:<11} | {value:>5.1f}")
+    # Format datetime to fit column (cut microseconds)
+    notified_short = str(notified).split('.')[0] if notified else "None"
+    print(f"  {sensor:<9} | {notified_short:<14} | {alert_type[:10]:<10} | {value:>5.1f}")
 
 # 4. Show recent sensor readings (last 5 per sensor)
 print("\n4. RECENT SENSOR READINGS (last 5 each):")
@@ -88,12 +89,13 @@ cursor.execute("""
     ORDER BY last_notified DESC
     LIMIT 10
 """)
-print("  Alert Type     | Sensor | Time              | Value")
-print("  --------------|--------|-------------------|------")
+print("  Alert Type    | Sensor | Time         | Value")
+print("  -------------|--------|-------------|------")
 for row in cursor.fetchall():
     alert_type, sensor, notified, value = row
-    notified_short = str(notified)[:16] if notified else "None"
-    print(f"  {alert_type[:13]:<13} | {sensor:<9} | {notified_short:<16} | {value:>5.1f}")
+    # Format datetime to fit column
+    notified_short = str(notified).split('.')[0][:16] if notified else "None"
+    print(f"  {alert_type[:12]:<12} | {sensor:<6} | {notified_short:<11} | {value:>5.1f}")
 
 # 6. Show record counts
 print("\n6. RECORD COUNTS:")
