@@ -141,17 +141,18 @@ def should_send_alert(sensor_name, alert_type):
         return False
 
     with current_app.app_context():
-        first_alert = Alert.query.filter_by(
+        last_notified_alert = Alert.query.filter_by(
             sensor_name=sensor_name, 
-            alert_type=real_type,
-            status='active'  # NEW!
-        ).order_by(Alert.id.asc()).first()
+            alert_type=real_type
+            ).order_by(Alert.last_notified.desc(nullsfirst=True)).first()
         
-        if not first_alert or not first_alert.last_notified:
+
+        
+        if not last_notified_alert or not last_notified_alert.last_notified:
             logging.info("No previous alert found → SEND")
             return True
         
-        hours_diff = (datetime.utcnow() - first_alert.last_notified).total_seconds() / 3600
+        hours_diff = (datetime.utcnow() - last_notified_alert.last_notified).total_seconds() / 3600
         logging.info(f"Hours since last alert: {hours_diff:.1f}")
         return hours_diff > 4
 
@@ -164,13 +165,17 @@ def mark_alert_sent(sensor_name, alert_type):
         return False
 
     with current_app.app_context():
-        # Update ALL alerts for this sensor/type that haven't been notified
-        result = Alert.query.filter_by(
+        # Update ONLY the MOST RECENT alert for this sensor/type
+        recent_alert = Alert.query.filter_by(
             sensor_name=sensor_name, 
             alert_type=real_type
-        ).filter(Alert.last_notified.is_(None)).update({
-            Alert.last_notified: datetime.utcnow()
-        })
-        db.session.commit()
-        logging.info(f"✅ Marked {result} alerts as notified: {sensor_name}/{real_type}")
-        return result > 0
+            ).order_by(Alert.id.desc()).first()
+        
+        if recent_alert and recent_alert.last_notified is None:
+            recent_alert.last_notified = datetime.utcnow()
+            db.session.commit()
+            logging.info(f"Marked recent alert #{recent_alert.id} as notified")
+            return True
+        
+        logging.info(f"No recent unnotified alert found")
+        return False
