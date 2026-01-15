@@ -67,6 +67,6 @@ def read_all() -> Dict[str, Optional[float]]:
 # =============================
 # BACKWARD COMPATIBLE
 # =============================
-def read():  # Keep old single-probe API
-    """Backward compatible - reads bed_a"""
-    return read('bed_a')
+#def read():  # Keep old single-probe API
+#    """Backward compatible - reads bed_a"""
+#    return read('bed_a')
