@@ -251,16 +251,19 @@ def add_probe():
         active=True
     )
     
+    # ALL SENSORS: Thresholds (ALERT bounds)
+    min_val = request.form.get('min_value', '').strip()
+    max_val = request.form.get('max_value', '').strip()
+    if min_val: probe.min_value = float(min_val)  # All sensors
+    if max_val: probe.max_value = float(max_val)  # All sensors
+
     # Soil-specific calibration
     if sensor_type == 'soil':
-        probe.dry_voltage = float(request.form['dry_voltage'])
-        probe.wet_voltage = float(request.form['wet_voltage'])
-    
-    # Temp/light ranges
-    elif sensor_type in ['temp', 'light']:
-        probe.min_value = float(request.form.get('min_value', 0))
-        probe.max_value = float(request.form.get('max_value', 100))
-    
+        dry_voltage = request.form.get('dry_voltage', '').strip()
+        wet_voltage = request.form.get('wet_voltage', '').strip()
+        if dry_voltage: probe.dry_voltage = float(dry_voltage)
+        if wet_voltage: probe.wet_voltage = float(wet_voltage)
+
     db.session.add(probe)
     db.session.commit()
     flash(f'Probe "{name}" added!')

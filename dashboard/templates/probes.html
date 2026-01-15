@@ -7,14 +7,14 @@
 </head>
 <body>
     <div style="text-align: center; margin-bottom: 30px;">
-        <h1>🌱 Sensor Management ({{ probes|length }} probes)</h1>
+        <h1>Sensor Management ({{ probes|length }} probes)</h1>
         <a href="/" class="dashboard-link">← Back to Dashboard</a>
     </div>
 
     <!-- Add New Probe Form -->
     <div class="chart-card probe-form">
         <form method="POST" action="/probes/add" class="probe-form">
-            <h3>➕ Add New Probe</h3>
+            <h3>Add New Probe</h3>
             
             <label>Name: 
                 <input type="text" name="name" required placeholder="soil_bed_c">
@@ -46,18 +46,20 @@
                 </label>
             </div>
             
-            <!-- Temp/Light Ranges -->
-            <div id="temp-light-ranges" style="display: none;">
-                <label>Min Value: 
-                    <input type="number" step="0.1" name="min_value" placeholder="0">
-                </label>
-                <label>Max Value: 
-                    <input type="number" step="0.1" name="max_value" placeholder="100">
-                </label>
+            <!-- Thresholds (ALL sensors) -->
+            <div id="threshold-section">
+                <label>Alert if BELOW: <input type="number" step="0.1" name="min_value" placeholder="Soil:20%, Temp:5°C"></label>
+                <label>Alert if ABOVE: <input type="number" step="0.1" name="max_value" placeholder="Soil:90%, Temp:30°C"></label>
             </div>
+
+            <!-- Soil ONLY: Calibration -->
+        <div id="soil-calibration">
+            <label>Dry Calib: <input type="number" step="0.01" name="dry_voltage" placeholder="2.48V"></label>
+            <label>Wet Calib: <input type="number" step="0.01" name="wet_voltage" placeholder="1.0V"></label>
+        </div>
             
             <br>
-            <button type="submit">➕ Add Probe</button>
+            <button type="submit">Add Probe</button>
         </form>
     </div>
 

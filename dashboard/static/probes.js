@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', function() {
         sensorTypeSelect.onchange = function() {
             const type = this.value;
             soilCalibration.style.display = type === 'soil' ? 'block' : 'none';
-            tempLightRanges.style.display = type !== 'soil' ? 'block' : 'none';
+            thresholdSection.style.display = 'block';  // ALWAYS show thresholds
         };
         
         // Trigger initial state
