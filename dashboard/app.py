@@ -51,28 +51,35 @@ def log_readings_loop(interval=30): #300 = 5mintues, changed to 30 for testing.
     with app.app_context():
         while True:
             try:
-                soil_val = soil_moisture.read()
-                sensor_name = 'Soil'
-                db.session.add(SensorReading(sensor_type='soil_moisture', value=soil_val))
+                soil_readings = soil_moisture.read_all() 
 
-                # CHECK if already alerting
-                existing_alert = Alert.query.filter_by(sensor_name=sensor_name, alert_type='Low Moisture', status='active').first()
+                for probe_name, soil_val in soil_readings.items():
+                    if soil_val is None:
+                        continue
 
-                if soil_val <= LOW_MOISTURE_THRESHOLD:  
-                    if not existing_alert:
-                        db.session.add(Alert(alert_type='Low Moisture', sensor_name=sensor_name, value=soil_val))
+                    # Probe-specific sensor name
+                    sensor_name = f"Soil-{probe_name.title()}"  
+                    db.session.add(SensorReading(sensor_type='soil_moisture', value=soil_val, probe_id=probe_name))
+
+
+                    # CHECK if already alerting
+                    existing_alert = Alert.query.filter_by(sensor_name=sensor_name, alert_type='Low Moisture', status='active').first()
+
+                    if soil_val <= LOW_MOISTURE_THRESHOLD:  
+                        if not existing_alert:
+                            db.session.add(Alert(alert_type='Low Moisture', sensor_name=sensor_name, value=soil_val))
+                            db.session.commit()
+                            logging.warning(f"Low Moisture Detected {soil_val}%")
+                                    
+                        alert_low_moisture(sensor_name, soil_val)
+
+                    elif existing_alert and soil_val > LOW_MOISTURE_THRESHOLD:
+                        existing_alert.status = 'resolved'
                         db.session.commit()
-                        logging.warning(f"Low Moisture Detected {soil_val}%")
-                                  
-                    alert_low_moisture(sensor_name, soil_val)
+                        logging.info(f"Low Moisture RESOLVED: {soil_val}")
 
-                elif existing_alert and soil_val > LOW_MOISTURE_THRESHOLD:
-                    existing_alert.status = 'resolved'
                     db.session.commit()
-                    logging.info(f"Low Moisture RESOLVED: {soil_val}")
-
-                db.session.commit()
-                logging.info(f"Soil moisture: {soil_val}%")
+                    logging.info(f"Soil moisture: {soil_val}%")
                 
             except Exception as e:
                 logging.error("Error logging soil: {e}")
