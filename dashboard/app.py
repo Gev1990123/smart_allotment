@@ -41,6 +41,15 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # === INITIALIZE DB FROM db.py ===
 db.init_app(app)
 
+# Initialize database + sensors
+with app.app_context():
+    db.create_all()
+    
+    # 🔥 Initialize soil moisture from your DB probes
+    from sensors.soil_moisture import init_channels
+    init_channels()
+    logging.info("✅ Database + soil sensors ready!")
+
 LOW_MOISTURE_THRESHOLD = 30  # %
 HIGH_TEMP_THRESHOLD = 30 # °C
 LOW_TEMP_THRESHOLD = 0 # °C
