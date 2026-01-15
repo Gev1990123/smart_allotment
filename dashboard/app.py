@@ -13,6 +13,7 @@ from models.alerts import Alert
 from sensors import soil_moisture, temperature, light
 import utils.logger
 import logging
+from dotenv import load_dotenv
 from utils.notifications import alert_high_temperature, alert_low_light, alert_low_temperature, alert_low_moisture
 from utils.sensor_utils import format_light_level, format_moisture, format_temperature
 
@@ -20,10 +21,20 @@ from utils.sensor_utils import format_light_level, format_moisture, format_tempe
 utils.logger.setup()
 logging.info("=== Smart Allotment Dashboard starting ===")
 
+# === Load ENV ===
+load_dotenv()
+
 # === CREATE APP & DB HERE (eliminates circular imports) ===
 app = Flask(__name__)
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(BASE_DIR, 'data', 'smart_allotment.db')}"
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    'pool_size': 10,
+    'max_overflow': 20,
+    'pool_pre_ping': True,
+    'pool_recycle': 3600
+}
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'fallback-dev-secret')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # === INITIALIZE DB FROM db.py ===
@@ -202,7 +213,7 @@ if __name__ == '__main__':
     # Manual testing
     with app.app_context():
         db.create_all()
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=os.getenv('DEBUG', 'False').lower() == 'true')
 else:
     # Systemd service
     with app.app_context():

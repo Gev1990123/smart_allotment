@@ -30,5 +30,6 @@ data/logs/
 *.vscodesettings.json
 
 # MISC
+/docs
 kit-list.txt
 to_do.txt
