@@ -6,7 +6,7 @@ from adafruit_ads1x15.ads1115 import ADS1115
 from adafruit_ads1x15.analog_in import AnalogIn
 from typing import Dict, Optional
 from flask import current_app
-from models import Probe
+from models.probes import Probe
 from utils.logger import setup
 
 # =============================
