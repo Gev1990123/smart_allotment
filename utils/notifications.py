@@ -148,15 +148,7 @@ def should_send_alert(sensor_name, alert_type):
             Alert.last_notified.desc(),  
             Alert.id.desc()             
         ).first()
-
-        # DEBUG LINES:
-        all_alerts = Alert.query.filter_by(sensor_name=sensor_name, alert_type=real_type).count()
-        print(f"DEBUG: {sensor_name}/{real_type} - Total alerts: {all_alerts}")
-        if last_notified_alert:
-            print(f"DEBUG: Last notified: {last_notified_alert.last_notified}, ID: {last_notified_alert.id}")
-        else:
-            print(f"DEBUG: NO alerts found!")
-        
+       
         if not last_notified_alert or not last_notified_alert.last_notified:
             logging.info("No previous alert found → SEND")
             return True
