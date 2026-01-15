@@ -52,7 +52,7 @@ for row in alerts:
     alert_type, sensor, value, ts, notified, status = row
     notified = notified or "None"
     ts_str = ts.strftime("%Y-%m-%d %H:%M:%S") if ts else "None"
-    notified_str = notified.strftime("%Y-%m-%d %H:%M") if notified else "None"
+    notified_str = str(notified)[:16] if notified else "None"
     print(f"  {str(alert_type)[:13]:<13} | {sensor:<6} | {value:>5.1f} | {ts_str} | {notified_str:<12} | {status}")
 
 # 3. LAST NOTIFIED EVENTS PER SENSOR
@@ -72,7 +72,7 @@ print(" Sensor   | Last Notified      | Alert Type        | Value | Status    |"
 print(" --------|---------------------|-------------------|-------|-----------|")
 for row in notified_events:
     sensor, notified, alert_type, value, ts, status = row
-    notified_short = notified.strftime("%Y-%m-%d %H:%M") if notified else "None"
+    notified_short = str(notified)[:16] if notified else "None"
     print(f" {sensor:<8} | {notified_short:<17} | {str(alert_type)[:17]:<17} | {value:>5.1f} | {status}")
 
 # 4. Recent sensor readings (last 5 per sensor)
