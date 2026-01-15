@@ -58,6 +58,7 @@ LOW_LIGHT_THRESHOLD = 2000 # Lux
 def log_readings_loop(interval=os.getenv('INTERVAL')):  
     """Continuously log sensor readings and create alerts"""
     logging.info("Sensor logging loop started") 
+    interval_secs = int(interval)
     with app.app_context():
         while True:
             try:
@@ -163,7 +164,7 @@ def log_readings_loop(interval=os.getenv('INTERVAL')):
             except Exception as e:
                 logging.error(f"Error logging light: {e}")
 
-            time.sleep(interval)
+            time.sleep(interval_secs)
 
 # Start background thread
 threading.Thread(target=log_readings_loop, daemon=True).start()
