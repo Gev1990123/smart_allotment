@@ -180,7 +180,7 @@ def mark_alert_sent(sensor_name, alert_type):
             alert_type=real_type
             ).order_by(Alert.id.desc()).first()
         
-        if recent_alert and recent_alert.last_notified is None:
+        if recent_alert:
             recent_alert.last_notified = datetime.utcnow()
             db.session.commit()
             logging.info(f"Marked recent alert #{recent_alert.id} as notified")
