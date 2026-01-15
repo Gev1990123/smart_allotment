@@ -75,3 +75,93 @@ th {
 #sensor-status td.offline {
     color: red;
 }
+
+/* ===== PROBES PAGE STYLES ===== */
+.probe-table .soil { background-color: #e8f5e8; }
+.probe-table .temp { background-color: #e8f4f8; }
+.probe-table .light { background-color: #fff5e8; }
+
+.probe-form label { 
+    display: block; 
+    margin: 10px 0; 
+    font-weight: bold;
+}
+
+.probe-form input, 
+.probe-form select { 
+    width: 200px; 
+    padding: 8px; 
+    border: 1px solid #ddd; 
+    border-radius: 4px;
+    font-size: 1em;
+    margin-top: 5px;
+}
+
+.probe-form { 
+    background: #f9f9f9; 
+    padding: 20px; 
+    border-radius: 8px; 
+    margin: 20px 0; 
+}
+
+.probe-form h3 { 
+    margin-top: 0; 
+    color: #2c3e50; 
+}
+
+button { 
+    padding: 8px 12px; 
+    margin: 2px; 
+    cursor: pointer; 
+    border: none; 
+    border-radius: 4px; 
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 0.9em;
+}
+
+button:hover { 
+    opacity: 0.8; 
+    transform: translateY(-1px);
+}
+
+.active { 
+    color: #27ae60 !important; 
+    font-weight: bold; 
+}
+
+.inactive { 
+    color: #e74c3c !important; 
+    font-weight: bold; 
+}
+
+.dashboard-link {
+    color: #4CAF50 !important; 
+    text-decoration: none; 
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+.dashboard-link:hover {
+    text-decoration: underline;
+}
+
+/* Action Buttons */
+.toggle-btn {
+    background: #4CAF50 !important;
+    color: white !important;
+}
+
+.toggle-btn.deactivate {
+    background: orange !important;
+}
+
+.delete-btn {
+    background: #f44336 !important;
+    color: white !important;
+}
+
+button:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}

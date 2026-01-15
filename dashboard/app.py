@@ -5,11 +5,12 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 import threading
 import time
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, flash, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from models.db import db 
 from models.sensor_data import SensorReading
 from models.alerts import Alert
+from models.probes import Probe
 from sensors import soil_moisture, temperature, light
 import utils.logger
 import logging
@@ -228,6 +229,60 @@ def readings():
         "light_status": light_status,
         "light_current": format_light_level(light_current)
     })
+
+@app.route('/probes')
+def probe_dashboard():
+    """Web interface to manage ALL probes"""
+    probes = Probe.query.order_by(Probe.sensor_type, Probe.name).all()
+    return render_template('probes.html', probes=probes)
+
+@app.route('/probes/add', methods=['POST'])
+def add_probe():
+    """Add new probe via web form"""
+    name = request.form['name']
+    sensor_type = request.form['sensor_type']
+    channel = request.form['channel']
+    
+    probe = Probe(
+        name=name,
+        sensor_type=sensor_type,
+        channel=channel,
+        description=request.form.get('description', ''),
+        active=True
+    )
+    
+    # Soil-specific calibration
+    if sensor_type == 'soil':
+        probe.dry_voltage = float(request.form['dry_voltage'])
+        probe.wet_voltage = float(request.form['wet_voltage'])
+    
+    # Temp/light ranges
+    elif sensor_type in ['temp', 'light']:
+        probe.min_value = float(request.form.get('min_value', 0))
+        probe.max_value = float(request.form.get('max_value', 100))
+    
+    db.session.add(probe)
+    db.session.commit()
+    flash(f'Probe "{name}" added!')
+    return redirect(url_for('probe_dashboard'))
+
+@app.route('/probes/<name>/toggle')
+def toggle_probe(name):
+    """Toggle probe active/inactive"""
+    probe = Probe.query.filter_by(name=name).first_or_404()
+    probe.active = not probe.active
+    db.session.commit()
+    flash(f'Probe "{name}" {'activated' if probe.active else 'deactivated'}!')
+    return redirect(url_for('probe_dashboard'))
+
+@app.route('/probes/<name>/delete')
+def delete_probe(name):
+    """Delete probe"""
+    probe = Probe.query.filter_by(name=name).first_or_404()
+    db.session.delete(probe)
+    db.session.commit()
+    flash(f'Probe "{name}" deleted!')
+    return redirect(url_for('probe_dashboard'))
 
 # ---------------- STARTUP ----------------
 if __name__ == '__main__':

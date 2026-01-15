@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sensor Management</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div style="text-align: center; margin-bottom: 30px;">
+        <h1>🌱 Sensor Management ({{ probes|length }} probes)</h1>
+        <a href="/" class="dashboard-link">← Back to Dashboard</a>
+    </div>
+
+    <!-- Add New Probe Form -->
+    <div class="chart-card probe-form">
+        <form method="POST" action="/probes/add" class="probe-form">
+            <h3>➕ Add New Probe</h3>
+            
+            <label>Name: 
+                <input type="text" name="name" required placeholder="soil_bed_c">
+            </label>
+            
+            <label>Type: 
+                <select name="sensor_type" required id="sensor-type">
+                    <option value="soil">🌱 Soil</option>
+                    <option value="temp">🌡️ Temperature</option>
+                    <option value="light">💡 Light</option>
+                </select>
+            </label>
+            
+            <label>Channel: 
+                <input type="text" name="channel" required placeholder="A0, GPIO4, I2C-0x23">
+            </label>
+            
+            <label>Description: 
+                <input type="text" name="description" placeholder="Greenhouse Bed C">
+            </label>
+            
+            <!-- Soil Calibration -->
+            <div id="soil-calibration">
+                <label>Dry Voltage: 
+                    <input type="number" step="0.01" name="dry_voltage" placeholder="2.48">
+                </label>
+                <label>Wet Voltage: 
+                    <input type="number" step="0.01" name="wet_voltage" placeholder="1.0">
+                </label>
+            </div>
+            
+            <!-- Temp/Light Ranges -->
+            <div id="temp-light-ranges" style="display: none;">
+                <label>Min Value: 
+                    <input type="number" step="0.1" name="min_value" placeholder="0">
+                </label>
+                <label>Max Value: 
+                    <input type="number" step="0.1" name="max_value" placeholder="100">
+                </label>
+            </div>
+            
+            <br>
+            <button type="submit">➕ Add Probe</button>
+        </form>
+    </div>
+
+    <!-- Probes Table -->
+    <table id="probes-table" class="probe-table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Channel</th>
+                <th>Calibration</th>
+                <th>Description</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for probe in probes %}
+            <tr class="{{ probe.sensor_type }}">
+                <td><strong>{{ probe.name }}</strong></td>
+                <td>{{ probe.sensor_type|title }}</td>
+                <td>{{ probe.channel }}</td>
+                <td>
+                    {% if probe.sensor_type == 'soil' and probe.dry_voltage and probe.wet_voltage %}
+                        {{ probe.dry_voltage }}V / {{ probe.wet_voltage }}V
+                    {% elif probe.min_value is not none and probe.max_value is not none %}
+                        {{ probe.min_value }} - {{ probe.max_value }}
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+                <td>{{ probe.description or '—' }}</td>
+                <td class="{% if probe.active %}active{% else %}inactive{% endif %}">
+                    {{ '🟢 Active' if probe.active else '🔴 Inactive' }}
+                </td>
+                <td>
+                <a href="/probes/{{ probe.name }}/toggle">
+                    <button class="toggle-btn {{ 'deactivate' if probe.active else '' }}">
+                        {{ 'Deactivate' if probe.active else 'Activate' }}
+                    </button>
+                </a>
+                <a href="/probes/{{ probe.name }}/delete" 
+                    onclick="return confirm('Delete {{ probe.name }}? This cannot be undone.')">
+                    <button class="delete-btn">Delete</button>
+                </a>
+            </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <script src="{{ url_for('static', filename='probes.js') }}"></script>
+</body>
+</html>
