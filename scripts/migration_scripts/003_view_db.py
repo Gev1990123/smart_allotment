@@ -1,33 +1,43 @@
-import sqlite3
+#!/usr/bin/env python3
 import os
+import psycopg2
+from dotenv import load_dotenv
+from datetime import datetime
 
-# Paths
-# Calculate project root
-current_dir = os.path.abspath(os.path.dirname(__file__))
-while os.path.basename(current_dir) != 'smart_allotment':
-    parent = os.path.dirname(current_dir)
-    if parent == current_dir:
-        raise RuntimeError("Could not find smart_allotment project root")
-    current_dir = parent
+# Load environment variables
+load_dotenv()
 
-PROJECT_ROOT = current_dir
-DB_PATH = os.path.join(PROJECT_ROOT, 'data', 'smart_allotment.db')
+# PostgreSQL connection from .env
+DB_HOST = os.getenv('DB_HOST')
+DB_NAME = os.getenv('DB_NAME')
+DB_USER = os.getenv('DB_USER')
+DB_PASS = os.getenv('DB_PASS')
 
-print("Smart Allotment Database Viewer")
+print("Smart Allotment PostgreSQL Viewer")
 print("=" * 50)
 
-# Connect to database
-conn = sqlite3.connect(DB_PATH)
+# Connect to PostgreSQL
+conn = psycopg2.connect(
+    host=DB_HOST,
+    database=DB_NAME,
+    user=DB_USER,
+    password=DB_PASS
+)
 cursor = conn.cursor()
 
 # 1. Show all tables
 print("\n1. TABLES:")
-cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+cursor.execute("""
+    SELECT table_name 
+    FROM information_schema.tables 
+    WHERE table_schema = 'public'
+    ORDER BY table_name
+""")
 tables = cursor.fetchall()
 for table in tables:
-    print(f"{table[0]}")
+    print(f"  {table[0]}")
 
-# 2. Show recent alerts (last 10)
+# 2. Recent alerts (last 10)
 print("\n2. RECENT ALERTS (last 10):")
 cursor.execute("""
     SELECT alert_type, sensor_name, value, timestamp, last_notified, status 
@@ -35,82 +45,77 @@ cursor.execute("""
     ORDER BY timestamp DESC 
     LIMIT 10
 """)
-print("  Type          | Sensor | Value | Time                | Last Notified | Status    |")
+alerts = cursor.fetchall()
+print("  Type           | Sensor | Value | Time                | Last Notified | Status    |")
 print("  ---------------|--------|-------|---------------------|--------------|-----------|")
-for row in cursor.fetchall():
+for row in alerts:
     alert_type, sensor, value, ts, notified, status = row
     notified = notified or "None"
-    print(f"  {alert_type[:13]:<13} | {sensor}   | {value:>5} | {ts} | {notified} | {status}")
+    ts_str = ts.strftime("%Y-%m-%d %H:%M:%S") if ts else "None"
+    notified_str = notified.strftime("%Y-%m-%d %H:%M") if notified else "None"
+    print(f"  {str(alert_type)[:13]:<13} | {sensor:<6} | {value:>5.1f} | {ts_str} | {notified_str:<12} | {status}")
 
-# 3. LAST NOTIFIED EVENTS PER SENSOR (most recent notification per sensor)
+# 3. LAST NOTIFIED EVENTS PER SENSOR
 print("\n3. LAST NOTIFIED EVENTS PER SENSOR:")
 cursor.execute("""
-    SELECT DISTINCT sensor_name, 
+    SELECT sensor_name, 
            MAX(last_notified) as last_notified,
            alert_type, value, timestamp, status
     FROM alerts 
     WHERE last_notified IS NOT NULL
-    GROUP BY sensor_name
+    GROUP BY sensor_name, alert_type, value, timestamp, status
     ORDER BY last_notified DESC
+    LIMIT 10
 """)
-print(" Sensor    | Last Notified       | Alert Type           | Value | Status    |")
-print(" ----------|---------------------|----------------------|-------|-----------|")
-for row in cursor.fetchall():
+notified_events = cursor.fetchall()
+print(" Sensor   | Last Notified      | Alert Type        | Value | Status    |")
+print(" --------|---------------------|-------------------|-------|-----------|")
+for row in notified_events:
     sensor, notified, alert_type, value, ts, status = row
-    # Format datetime to fit column (cut microseconds)
-    notified_short = str(notified).split('.')[0] if notified else "None"
-    print(f" {sensor:<9} | {notified_short:<17} | {alert_type:<20} | {value:>5.1f} | {status:<10}")
+    notified_short = notified.strftime("%Y-%m-%d %H:%M") if notified else "None"
+    print(f" {sensor:<8} | {notified_short:<17} | {str(alert_type)[:17]:<17} | {value:>5.1f} | {status}")
 
-# 4. Show recent sensor readings (last 5 per sensor)
+# 4. Recent sensor readings (last 5 per sensor)
 print("\n4. RECENT SENSOR READINGS (last 5 each):")
 for sensor_type in ['soil_moisture', 'temperature', 'light']:
     print(f"\n  {sensor_type.upper()}:")
     cursor.execute("""
         SELECT sensor_type, value, timestamp 
         FROM sensor_readings 
-        WHERE sensor_type=? 
+        WHERE sensor_type = %s 
         ORDER BY timestamp DESC 
         LIMIT 5
     """, (sensor_type,))
+    readings = cursor.fetchall()
     print("    Value | Time")
     print("    ------|----------")
-    for row in cursor.fetchall():
-        print(f"    {row[1]:>5} | {row[2]}")
+    for row in readings:
+        value, ts = row[1], row[2]
+        ts_str = ts.strftime("%H:%M:%S")
+        print(f"    {value:>6.1f} | {ts_str}")
 
-# 5. Last Notified per sensor (unique alerts)
-print("\n5. LAST NOTIFIED BY ALERT TYPE:")
+# 5. RECORD COUNTS
+print("\n5. RECORD COUNTS:")
 cursor.execute("""
-    SELECT alert_type, sensor_name,
-           MAX(last_notified) as last_notified,
-           MAX(value) as latest_value, status
+    SELECT 'alerts' as table_name, COUNT(*) as count 
     FROM alerts 
-    WHERE last_notified IS NOT NULL
-    GROUP BY alert_type, sensor_name
-    ORDER BY last_notified DESC
-    LIMIT 10
+    UNION ALL 
+    SELECT 'sensor_readings', COUNT(*) 
+    FROM sensor_readings
 """)
-print(" Alert Type           | Sensor | Time                | Value | Status   |")
-print(" ---------------------|--------|---------------------|-------|----------| ")
-for row in cursor.fetchall():
-    alert_type, sensor, notified, value, status = row
-    notified_short = str(notified).split('.')[0] if notified else "None"
-    print(f" {alert_type:<20} | {sensor:<6} | {notified_short:<17} | {value:>5.1f} | {status:<10}")
+counts = cursor.fetchall()
+for row in counts:
+    print(f"  {row[0]}: {row[1]:,} records")
 
-# 6. Show record counts
-print("\n6. RECORD COUNTS:")
-cursor.execute("SELECT 'alerts' as table_name, COUNT(*) as count FROM alerts UNION ALL SELECT 'sensor_readings', COUNT(*) FROM sensor_readings")
-for row in cursor.fetchall():
-    print(f"  {row[0]}: {row[1]} records")
+# 6. Database size (PostgreSQL stats)
+print("\n6. DATABASE SIZE:")
+cursor.execute("""
+    SELECT pg_size_pretty(pg_database_size(current_database())) as db_size
+""")
+db_size = cursor.fetchone()[0]
+print(f"  Database size: {db_size}")
 
-# 7. Database file size (SQL + filesystem)
-print("\n7. DATABASE SIZE:")
-stat_size = os.path.getsize(DB_PATH)
-cursor.execute("SELECT page_count * page_size AS db_size FROM pragma_page_count(), pragma_page_size()")
-sql_size = cursor.fetchone()[0]
-
-size_mb = stat_size / (1024 * 1024)
-print(f" File size:   {size_mb:.1f} MB ({stat_size:,} bytes)")
-print(f" SQL size:   {sql_size / (1024*1024):.1f} MB ({sql_size:,} bytes)")
-
+# Close connection
+cursor.close()
 conn.close()
-print("\nDone!")
+print("\n✅ PostgreSQL Database Viewer Complete!")
