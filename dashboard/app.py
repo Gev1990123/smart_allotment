@@ -272,7 +272,8 @@ def toggle_probe(name):
     probe = Probe.query.filter_by(name=name).first_or_404()
     probe.active = not probe.active
     db.session.commit()
-    flash(f'Probe "{name}" {'activated' if probe.active else 'deactivated'}!')
+    status = 'activated' if probe.active else 'deactivated'
+    flash(f'Probe "{name}" {status}!')
     return redirect(url_for('probe_dashboard'))
 
 @app.route('/probes/<name>/delete')
