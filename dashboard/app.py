@@ -54,12 +54,26 @@ def log_readings_loop(interval=30): #300 = 5mintues, changed to 30 for testing.
                 soil_val = soil_moisture.read()
                 sensor_name = 'Soil'
                 db.session.add(SensorReading(sensor_type='soil_moisture', value=soil_val))
-                if soil_val < LOW_MOISTURE_THRESHOLD:                    
-                    db.session.add(Alert(alert_type='Low Moisture', sensor_name=sensor_name, value=soil_val))
-                    logging.warning(f"Low Moisture Detected {soil_val}%")
+
+                # CHECK if already alerting
+                existing_alert = Alert.query.filter_by(sensor_name=sensor_name, alert_type='Low Moisture', status='active').first()
+
+                if soil_val <= LOW_MOISTURE_THRESHOLD:  
+                    if not existing_alert:
+                        db.session.add(Alert(alert_type='Low Moisture', sensor_name=sensor_name, value=soil_val))
+                        db.session.commit()
+                        logging.warning(f"Low Moisture Detected {soil_val}%")
+                                  
                     alert_low_moisture(sensor_name, soil_val)
+
+                elif existing_alert and soil_val > LOW_MOISTURE_THRESHOLD:
+                    existing_alert.status = 'resolved'
+                    db.session.commit()
+                    logging.info(f"Low Moisture RESOLVED: {soil_val}")
+
                 db.session.commit()
                 logging.info(f"Soil moisture: {soil_val}%")
+                
             except Exception as e:
                 logging.error("Error logging soil: {e}")
 
