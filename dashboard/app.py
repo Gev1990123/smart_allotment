@@ -61,7 +61,7 @@ def log_readings_loop(interval=3000): #300 = 5mintues, changed to 30 for testing
                 db.session.commit()
                 logging.info(f"Soil moisture: {soil_val}%")
             except Exception as e:
-                logging.error("Error logging soil:", e)
+                logging.error("Error logging soil: {e}")
 
             try:
                 temp_val = temperature.read()
@@ -101,7 +101,7 @@ def log_readings_loop(interval=3000): #300 = 5mintues, changed to 30 for testing
                 db.session.commit()
                 logging.info(f"Temperature: {temp_val}°C")
             except Exception as e:
-                logging.error("Error logging temperature:", e)
+                logging.error("Error logging temperature: {e}")
 
             try:
                 light_val = light.read()
@@ -130,7 +130,7 @@ def log_readings_loop(interval=3000): #300 = 5mintues, changed to 30 for testing
                 logging.info(f"Light: {light_val}")
 
             except Exception as e:
-                logging.error("Error logging light:", e)
+                logging.error(f"Error logging light: {e}")
 
             time.sleep(interval)
 
