@@ -6,6 +6,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 import threading
 import time
 from flask import Flask, render_template, jsonify, flash, request, redirect, url_for
+from flask_wtf.csrf import CSRFProtect
 from flask_sqlalchemy import SQLAlchemy
 from models.db import db 
 from models.sensor_data import SensorReading
@@ -40,6 +41,11 @@ app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
 }
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'fallback-dev-secret')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['DEBUG'] = False 
+app.config['TEMPLATES_AUTO_RELOAD'] = False
+app.config['WTF_CSRF_ENABLED'] = True
+csrf = CSRFProtect(app)
+
 
 # === INITIALIZE DB FROM db.py ===
 db.init_app(app)
