@@ -13,7 +13,6 @@ from models.alerts import Alert
 from models.probes import Probe
 from sensors import soil_moisture, temperature, light
 from utils.logger import setup_logging, get_logger
-import logging
 from dotenv import load_dotenv
 from utils.notifications import alert_high_temperature, alert_low_light, alert_low_temperature, alert_low_moisture
 from utils.sensor_utils import format_light_level, format_moisture, format_temperature
@@ -68,7 +67,7 @@ LOW_LIGHT_THRESHOLD = 2000 # Lux
 
 def log_readings_loop(interval=os.getenv('INTERVAL')):  
     """Continuously log sensor readings and create alerts"""
-    logging.info("Sensor logging loop started") 
+    logger.info("Sensor logging loop started") 
     interval_secs = int(interval)
     with app.app_context():
         while True:
@@ -91,20 +90,20 @@ def log_readings_loop(interval=os.getenv('INTERVAL')):
                         if not existing_alert:
                             db.session.add(Alert(alert_type='Low Moisture', sensor_name=sensor_name, value=soil_val))
                             db.session.commit()
-                            logging.warning(f"Low Moisture Detected {soil_val}%")
+                            logger.warning(f"Low Moisture Detected {soil_val}%")
                                     
                         alert_low_moisture(sensor_name, soil_val)
 
                     elif existing_alert and soil_val > LOW_MOISTURE_THRESHOLD:
                         existing_alert.status = 'resolved'
                         db.session.commit()
-                        logging.info(f"Low Moisture RESOLVED: {soil_val}")
+                        logger.info(f"Low Moisture RESOLVED: {soil_val}")
 
                     db.session.commit()
-                    logging.info(f"Soil moisture: {soil_val}%")
+                    logger.info(f"Soil moisture: {soil_val}%")
                 
             except Exception as e:
-                logging.error("Error logging soil: {e}")
+                logger.error("Error logging soil: {e}")
 
             try:
                 temp_readings = temperature.read_all()
@@ -125,38 +124,38 @@ def log_readings_loop(interval=os.getenv('INTERVAL')):
                         if not high_existing_alert:
                             db.session.add(Alert(alert_type='High Temperature', sensor_name=sensor_name, value=temp_val))
                             db.session.commit()
-                            logging.warning(f"High Temperature Detected {temp_val}°C")
+                            logger.warning(f"High Temperature Detected {temp_val}°C")
                         
                         alert_high_temperature(sensor_name, temp_val)
 
                     elif high_existing_alert and temp_val <= HIGH_TEMP_THRESHOLD:
                         high_existing_alert.status = 'resolved'
                         db.session.commit()
-                        logging.info(f"High Temperature RESOLVED: {temp_val}")
+                        logger.info(f"High Temperature RESOLVED: {temp_val}")
 
                     if temp_val <= LOW_TEMP_THRESHOLD:
                         if not low_existing_alert:
                             db.session.add(Alert(alert_type='Low Temperature', sensor_name=sensor_name, value=temp_val))    
                             db.session.commit()
-                            logging.warning(f"Low Temperature Detected {temp_val}°C")
+                            logger.warning(f"Low Temperature Detected {temp_val}°C")
 
                         alert_low_temperature(sensor_name, temp_val)
 
                     elif low_existing_alert and temp_val > HIGH_TEMP_THRESHOLD:
                         low_existing_alert.status = 'resolved'
                         db.session.commit()
-                        logging.info(f"Low Temperature RESOLVED: {temp_val}")
+                        logger.info(f"Low Temperature RESOLVED: {temp_val}")
 
                     db.session.commit()
-                    logging.info(f"Temperature: {temp_val}°C")
+                    logger.info(f"Temperature: {temp_val}°C")
             except Exception as e:
-                logging.error("Error logging temperature: {e}")
+                logger.error("Error logging temperature: {e}")
 
             try:
                 
                 light_readings = light.read_all()
 
-                for probe_name, light_val, in light_readings.items():
+                for probe_name, light_val in light_readings.items():
                     if light_val is None:
                         continue
 
@@ -171,20 +170,20 @@ def log_readings_loop(interval=os.getenv('INTERVAL')):
                         if not existing_alert:
                             db.session.add(Alert(alert_type='Low Light', sensor_name=sensor_name, value=light_val))
                             db.session.commit()
-                            logging.warning(f"Low Light Alert: {light_val}")
+                            logger.warning(f"Low Light Alert: {light_val}")
 
                         alert_low_light(sensor_name, light_val)
 
                     elif existing_alert and light_val > LOW_LIGHT_THRESHOLD:
                         existing_alert.status = 'resolved'
                         db.session.commit()
-                        logging.info(f"Low Light RESOLVED: {light_val}")
+                        logger.info(f"Low Light RESOLVED: {light_val}")
 
                     db.session.commit()
-                    logging.info(f"Light: {light_val}")
+                    logger.info(f"Light: {light_val}")
 
             except Exception as e:
-                logging.error(f"Error logging light: {e}")
+                logger.error(f"Error logging light: {e}")
 
             time.sleep(interval_secs)
 
@@ -350,7 +349,7 @@ else:
     # Systemd service
     with app.app_context():
         db.create_all()
-        logging.info("Smart Allotment Dashboard started on port 5000")
+        logger.info("Smart Allotment Dashboard started on port 5000")
     
     from werkzeug.serving import run_simple
     run_simple('0.0.0.0', 5000, app, use_reloader=False)
