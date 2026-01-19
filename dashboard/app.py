@@ -17,6 +17,8 @@ import logging
 from dotenv import load_dotenv
 from utils.notifications import alert_high_temperature, alert_low_light, alert_low_temperature, alert_low_moisture
 from utils.sensor_utils import format_light_level, format_moisture, format_temperature
+from sensors.soil_moisture import soil_init_channels
+from sensors.light import light_init_channels
 
 # == SETUP LOGGING ===
 utils.logger.setup()
@@ -45,10 +47,13 @@ db.init_app(app)
 with app.app_context():
     db.create_all()
     
-    # 🔥 Initialize soil moisture from your DB probes
-    from sensors.soil_moisture import init_channels
-    init_channels()
-    logging.info("✅ Database + soil sensors ready!")
+    # Initialise soil moisture sensors from your DB probes
+    soil_init_channels()
+    logging.info("Soil sensors ready!")
+
+    # Initialise light sensors from your DB probes
+    light_init_channels()
+    logging.info("Light sensors ready!")
 
 LOW_MOISTURE_THRESHOLD = 30  # %
 HIGH_TEMP_THRESHOLD = 30 # °C
@@ -136,30 +141,37 @@ def log_readings_loop(interval=os.getenv('INTERVAL')):
                 logging.error("Error logging temperature: {e}")
 
             try:
-                light_val = light.read()
-                sensor_name = 'Light'
-                db.session.add(SensorReading(sensor_type='light', value=light_val))
                 
-                # CHECK if already alerting
-                existing_alert = Alert.query.filter_by(sensor_name=sensor_name, alert_type='Low Light', status='active').first()
+                light_readings = light.read_all()
+
+                for probe_name, light_val, in light_readings.items():
+                    if light_val is None:
+                        continue
+
+                    # Probe-specific sensor name
+                    sensor_name = f"Light-{probe_name.title()}"
+                    db.session.add(SensorReading(sensor_type='light', value=light_val, probe_id=probe_name))
+                
+                    # CHECK if already alerting
+                    existing_alert = Alert.query.filter_by(sensor_name=sensor_name, alert_type='Low Light', status='active').first()
 
 
-                if light_val <= LOW_LIGHT_THRESHOLD:
-                    if not existing_alert:
-                        db.session.add(Alert(alert_type='Low Light', sensor_name=sensor_name, value=light_val))
+                    if light_val <= LOW_LIGHT_THRESHOLD:
+                        if not existing_alert:
+                            db.session.add(Alert(alert_type='Low Light', sensor_name=sensor_name, value=light_val))
+                            db.session.commit()
+                            logging.warning(f"Low Light Alert: {light_val}")
+
+
+                        alert_low_light(sensor_name, light_val)
+
+                    elif existing_alert and light_val > LOW_LIGHT_THRESHOLD:
+                        existing_alert.status = 'resolved'
                         db.session.commit()
-                        logging.warning(f"NEW Low Light Alert: {light_val}")
+                        logging.info(f"Low Light RESOLVED: {light_val}")
 
-
-                    alert_low_light(sensor_name, light_val)
-
-                elif existing_alert and light_val > LOW_LIGHT_THRESHOLD:
-                    existing_alert.status = 'resolved'
                     db.session.commit()
-                    logging.info(f"Low Light RESOLVED: {light_val}")
-
-                db.session.commit()
-                logging.info(f"Light: {light_val}")
+                    logging.info(f"Light: {light_val}")
 
             except Exception as e:
                 logging.error(f"Error logging light: {e}")

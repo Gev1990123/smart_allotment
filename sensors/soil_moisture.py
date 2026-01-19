@@ -53,7 +53,7 @@ def get_active_soil_probes() -> Dict[str, Dict]:
 # =============================
 # CREATE DYNAMIC CHANNELS
 # =============================
-def init_channels():
+def soil_init_channels():
     """Initialize AFTER app context exists"""
     global PROBES_CONFIG, CHANNELS
     PROBES_CONFIG = get_active_soil_probes()
