@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, jsonify
+from app.extensions import db 
 from models.sensor_data import SensorReading
 from models.alerts import Alert
 from utils.sensor_utils import format_light_level, format_moisture, format_temperature
