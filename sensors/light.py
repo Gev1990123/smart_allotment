@@ -64,47 +64,6 @@ def get_active_light_probes() -> Dict[str, Dict]:
 
 
 # =============================
-# DYNAMIC PROBES FROM DATABASE
-# =============================
-def get_active_light_probes() -> Dict[str, Dict]:
-    """
-    Get ONLY active light probes from database.
-    Uses Probe.channel as I2C address (e.g. 'I2C-0x23').
-    """
-    with current_app.app_context():
-        probes = Probe.query.filter_by(active=True, sensor_type='light').all()
-        probe_config: Dict[str, Dict] = {}
-
-        for probe in probes:
-            try:
-                # Expect channel like "I2C-0x23" or "I2C-35"
-                if not probe.channel.startswith("I2C-"):
-                    raise ValueError(
-                        f"Invalid light channel format '{probe.channel}' "
-                        f"for probe {probe.name}. Expected 'I2C-0x23' etc."
-                    )
-                addr_str = probe.channel[4:]
-                if addr_str.startswith("0x"):
-                    address = int(addr_str, 16)
-                else:
-                    address = int(addr_str)
-
-                probe_config[probe.name] = {
-                    'address': address,
-                    'min_threshold': probe.min_value if probe.min_value is not None else 0.0,
-                    'max_threshold': probe.max_value if probe.max_value is not None else 65535.0,
-                    'description': probe.description or '',
-                }
-                logger.info(
-                    f"Loaded light probe: {probe.name} (addr=0x{address:02X})"
-                )
-            except Exception as e:
-                logger.error(f"Invalid config for light probe {probe.name}: {e}")
-
-        return probe_config
-
-
-# =============================
 # CREATE DYNAMIC SENSORS
 # =============================
 def light_init_channels():
@@ -135,7 +94,7 @@ def read(probe_name: str = None) -> Optional[float]:
     """
     probes = get_active_light_probes()
     if not probes:
-        logging.error("No active light probes found")
+        logger.error("No active light probes found")
         return None
 
     # Default to first configured light probe if not specified
