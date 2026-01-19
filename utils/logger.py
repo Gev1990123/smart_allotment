@@ -7,6 +7,8 @@ from typing import Dict, Any
 def get_project_logs_dir() -> str:
     """Find project root and ensure logs/ exists"""
     current_dir = os.path.abspath(os.path.dirname(__file__))
+    #while os.path.basename(current_dir) != 'smart_allotment':
+    # Development
     while os.path.basename(current_dir) != 'smart_allotment_dev':
         parent = os.path.dirname(current_dir)
         if parent == current_dir:

@@ -15,7 +15,9 @@ def create_app(config_class=DevConfig):
     # Create app
     app = Flask(__name__)
     app.config.from_object(config_class)
-    
+    app.template_folder = 'dashboard/templates'
+    app.static_folder = 'dashboard/static'  
+
     # Initialize extensions
     db.init_app(app)
     csrf.init_app(app)
