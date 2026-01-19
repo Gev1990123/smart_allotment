@@ -12,7 +12,7 @@ from models.sensor_data import SensorReading
 from models.alerts import Alert
 from models.probes import Probe
 from sensors import soil_moisture, temperature, light
-import utils.logger
+from utils.logger import get_logger
 import logging
 from dotenv import load_dotenv
 from utils.notifications import alert_high_temperature, alert_low_light, alert_low_temperature, alert_low_moisture
@@ -21,8 +21,8 @@ from sensors.soil_moisture import soil_init_channels
 from sensors.light import light_init_channels
 
 # == SETUP LOGGING ===
-utils.logger.setup()
-logging.info("=== Smart Allotment Dashboard starting ===")
+logger = get_logger("app")
+logger.info("=== Smart Allotment Dashboard starting ===")
 
 # === Load ENV ===
 load_dotenv()
@@ -49,11 +49,11 @@ with app.app_context():
     
     # Initialise soil moisture sensors from your DB probes
     soil_init_channels()
-    logging.info("Soil sensors ready!")
+    logger.info("Soil sensors ready!")
 
     # Initialise light sensors from your DB probes
     light_init_channels()
-    logging.info("Light sensors ready!")
+    logger.info("Light sensors ready!")
 
 LOW_MOISTURE_THRESHOLD = 30  # %
 HIGH_TEMP_THRESHOLD = 30 # °C

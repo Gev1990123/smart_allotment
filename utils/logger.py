@@ -1,53 +1,96 @@
+# utils/logger.py - COMPLETE VERSION
 import logging
+import logging.config
 import os
+from typing import Dict, Any
 
-def setup(log_file="app.log"):
-    """
-    Sets up logging for the Smart Allotment app.
-    Logs to both file and console.
-    """
-
-    # Calculate project root
+def get_project_logs_dir() -> str:
+    """Find project root and ensure logs/ exists"""
     current_dir = os.path.abspath(os.path.dirname(__file__))
     while os.path.basename(current_dir) != 'smart_allotment':
         parent = os.path.dirname(current_dir)
         if parent == current_dir:
             raise RuntimeError("Could not find smart_allotment project root")
         current_dir = parent
-
-    PROJECT_ROOT = current_dir
-    LOG_DIR = os.path.join(PROJECT_ROOT, 'logs')
-    os.makedirs(LOG_DIR, exist_ok=True)
-
-    if not os.path.isabs(log_file):
-        log_file = os.path.join(LOG_DIR, log_file)
     
-    os.makedirs(os.path.dirname(log_file), exist_ok=True)
+    log_dir = os.path.join(current_dir, 'logs')
+    os.makedirs(log_dir, exist_ok=True)
+    return log_dir
 
-    # Get root logger
-    logger = logging.getLogger()
-    logger.setLevel(logging.INFO)
+LOGGING_CONFIG: Dict[str, Any] = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "app": {
+            "format": "%(asctime)s - %(levelname)s - %(message)s"
+        },
+        "detailed": {
+            "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        }
+    },
+    "handlers": {
+        # APP: file + console
+        "app_file": {
+            "class": "logging.FileHandler",
+            "level": "DEBUG",  # Captures INFO, WARNING, ERROR, DEBUG
+            "formatter": "app",
+            "filename": lambda: os.path.join(get_project_logs_dir(), "app.log"),
+            "mode": "a",
+        },
+        "app_console": {
+            "class": "logging.StreamHandler",
+            "level": "INFO",  # Console shows INFO+
+            "formatter": "app",
+        },
+        # SENSORS: file only (detailed)
+        "sensors_file": {
+            "class": "logging.FileHandler",
+            "level": "DEBUG",  # All levels
+            "formatter": "detailed",
+            "filename": lambda: os.path.join(get_project_logs_dir(), "sensors.log"),
+            "mode": "a",
+        },
+        # NOTIFICATIONS: file only  
+        "notifications_file": {
+            "class": "logging.FileHandler",
+            "level": "DEBUG",
+            "formatter": "detailed", 
+            "filename": lambda: os.path.join(get_project_logs_dir(), "notifications.log"),
+            "mode": "a",
+        }
+    },
+    "loggers": {
+        "app": {
+            "level": "DEBUG",
+            "handlers": ["app_file", "app_console"],
+            "propagate": False
+        },
+        "sensors": {
+            "level": "DEBUG",
+            "handlers": ["sensors_file"],
+            "propagate": False
+        },
+        "notifications": {
+            "level": "DEBUG",
+            "handlers": ["notifications_file"], 
+            "propagate": False
+        }
+    },
+    "root": {
+        "level": "WARNING",  # Root only WARNING+ 
+        "handlers": ["app_file", "app_console"]
+    }
+}
 
-    # Remove any existing handlers
-    if logger.hasHandlers():
-        logger.handlers.clear()
+def setup_logging():
+    """Initialize ALL loggers ONCE at startup"""
+    # Fix lambda filename issue for dictConfig
+    for handler in LOGGING_CONFIG["handlers"].values():
+        if callable(handler.get("filename")):
+            handler["filename"] = handler["filename"]()
+    
+    logging.config.dictConfig(LOGGING_CONFIG)
 
-    # File handler
-    file_handler = logging.FileHandler(log_file)
-    file_handler.setLevel(logging.INFO)
-    file_formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-    file_handler.setFormatter(file_formatter)
-
-    # Console handler
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.INFO)
-    console_handler.setFormatter(file_formatter)
-
-    # Add handlers
-    logger.addHandler(file_handler)
-    logger.addHandler(console_handler)
-
-    # Werkzeug Logging
-    werkzeug_logger = logging.getLogger('werkzeug')
-    werkzeug_logger.setLevel(logging.WARNING)
-    werkzeug_logger.handlers = [logging.StreamHandler()]
+def get_logger(category: str) -> logging.Logger:
+    """Get pre-configured logger: 'app', 'sensors', 'notifications'"""
+    return logging.getLogger(category)

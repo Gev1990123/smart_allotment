@@ -5,13 +5,14 @@ import adafruit_bh1750
 from typing import Dict, Optional
 from flask import current_app
 from models.probes import Probe
-from utils.logger import setup
+from utils.logger import get_logger
+
 
 # =============================
 # Setup Logging
 # =============================
 
-setup("sensor.log")
+logger = get_logger("sensors")
 
 # =============================
 # GLOBAL STATE
@@ -53,11 +54,11 @@ def get_active_light_probes() -> Dict[str, Dict]:
                     'max_threshold': probe.max_value if probe.max_value is not None else 65535.0,
                     'description': probe.description or '',
                 }
-                logging.info(
+                logger.info(
                     f"Loaded light probe: {probe.name} (addr=0x{address:02X})"
                 )
             except Exception as e:
-                logging.error(f"Invalid config for light probe {probe.name}: {e}")
+                logger.error(f"Invalid config for light probe {probe.name}: {e}")
 
         return probe_config
 
@@ -94,11 +95,11 @@ def get_active_light_probes() -> Dict[str, Dict]:
                     'max_threshold': probe.max_value if probe.max_value is not None else 65535.0,
                     'description': probe.description or '',
                 }
-                logging.info(
+                logger.info(
                     f"Loaded light probe: {probe.name} (addr=0x{address:02X})"
                 )
             except Exception as e:
-                logging.error(f"Invalid config for light probe {probe.name}: {e}")
+                logger.error(f"Invalid config for light probe {probe.name}: {e}")
 
         return probe_config
 
@@ -119,9 +120,9 @@ def light_init_channels():
         try:
             sensor = adafruit_bh1750.BH1750(_i2c, address=config['address'])
             SENSORS[name] = sensor
-            logging.info(f"Initialized BH1750 for light probe {name}")
+            logger.info(f"Initialized BH1750 for light probe {name}")
         except Exception as e:
-            logging.error(f"Failed to init BH1750 for {name}: {e}")
+            logger.error(f"Failed to init BH1750 for {name}: {e}")
 
 # =============================
 # READ SINGLE LIGHT PROBE
@@ -142,13 +143,13 @@ def read(probe_name: str = None) -> Optional[float]:
         probe_name = next(iter(probes.keys()))
 
     if probe_name not in probes:
-        logging.error(f"Unknown light probe: {probe_name}")
+        logger.error(f"Unknown light probe: {probe_name}")
         return None
 
     try:
         sensor = SENSORS.get(probe_name)
         if not sensor:
-            logging.warning(f"No BH1750 initialized for {probe_name}")
+            logger.warning(f"No BH1750 initialized for {probe_name}")
             return None
 
         config = probes[probe_name]
@@ -159,22 +160,22 @@ def read(probe_name: str = None) -> Optional[float]:
 
         # Optional threshold logging
         if result < config['min_threshold']:
-            logging.warning(
+            logger.warning(
                 f"{probe_name}: {result} lux below min {config['min_threshold']}"
             )
         if result > config['max_threshold']:
-            logging.warning(
+            logger.warning(
                 f"{probe_name}: {result} lux above max {config['max_threshold']}"
             )
 
-        logging.info(
+        logger.info(
             f"{probe_name}: {result} lux "
             f"(addr=0x{config['address']:02X})"
         )
         return result
 
     except Exception as e:
-        logging.error(f"Error reading light probe {probe_name}: {e}")
+        logger.error(f"Error reading light probe {probe_name}: {e}")
         return None
     
 
@@ -192,5 +193,5 @@ def read_all() -> Dict[str, Optional[float]]:
     for probe_name in light_probes.keys():
         results[probe_name] = read(probe_name)
 
-    logging.info(f"Read all light probes: {results}")
+    logger.info(f"Read all light probes: {results}")
     return results
