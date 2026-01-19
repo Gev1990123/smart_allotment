@@ -167,13 +167,11 @@ def log_readings_loop(interval=os.getenv('INTERVAL')):
                     # CHECK if already alerting
                     existing_alert = Alert.query.filter_by(sensor_name=sensor_name, alert_type='Low Light', status='active').first()
 
-
                     if light_val <= LOW_LIGHT_THRESHOLD:
                         if not existing_alert:
                             db.session.add(Alert(alert_type='Low Light', sensor_name=sensor_name, value=light_val))
                             db.session.commit()
                             logging.warning(f"Low Light Alert: {light_val}")
-
 
                         alert_low_light(sensor_name, light_val)
 
@@ -301,6 +299,17 @@ def add_probe():
     db.session.add(probe)
     db.session.commit()
     flash(f'Probe "{name}" added!')
+
+    if sensor_type == 'soil':
+        soil_moisture.refresh_channels()
+        flash('Soil sensors refreshed!')
+    elif sensor_type == 'light':
+        light.refresh_channels()
+        flash('Light sensors refreshed!')
+    elif sensor_type == 'temperature':
+        temperature.refresh_channels()
+
+
     return redirect(url_for('probe_dashboard'))
 
 @app.route('/probes/<name>/toggle')
@@ -309,8 +318,17 @@ def toggle_probe(name):
     probe = Probe.query.filter_by(name=name).first_or_404()
     probe.active = not probe.active
     db.session.commit()
+
     status = 'activated' if probe.active else 'deactivated'
     flash(f'Probe "{name}" {status}!')
+
+    if probe.sensor_type == 'soil':
+        soil_moisture.refresh_channels()
+    elif probe.sensor_type == 'light':
+        light.refresh_channels()
+    elif probe.sensor_type == 'temperature':
+        temperature.refresh_channels()
+
     return redirect(url_for('probe_dashboard'))
 
 @app.route('/probes/<name>/delete')

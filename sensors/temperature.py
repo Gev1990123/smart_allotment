@@ -143,3 +143,14 @@ def read_all() -> Dict[str, Optional[float]]:
 
     logger.info(f"Read all temp probes: {results}")
     return results
+
+# =============================
+# Rescan for sensors. 
+# =============================
+
+def refresh_channels():
+    """Re-scan DB and refresh active sensors."""
+    global PROBES_CONFIG, SENSORS
+    logger.info("🔄 Refreshing temperature probes from DB...")
+    temp_init_channels()  # Re-runs full init
+    logger.info(f"Refreshed: {len(SENSORS)} active temperature probes")
