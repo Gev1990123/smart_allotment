@@ -7,14 +7,12 @@ adafruit-circuitpython-bh1750
 
 # Web dashboard
 flask==2.3.2
-flask-wtf 
-flask-limiter 
+flask-wtf==1.2.1 
+flask-limiter==3.5.0
 gunicorn
 
 # Database
 flask-sqlalchemy==3.0.5
-postgresql 
-postgresql-contrib
 psycopg2-binary
 
 # Networking (optional but lightweight)
@@ -22,7 +20,7 @@ requests==2.32.0
 paho-mqtt==1.6.1
 
 # Environmental Variables
-python-dotenv
+python-dotenv==1.0.0
 
 # System Monitoring
 psutil
