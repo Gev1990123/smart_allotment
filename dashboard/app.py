@@ -19,6 +19,7 @@ from utils.notifications import alert_high_temperature, alert_low_light, alert_l
 from utils.sensor_utils import format_light_level, format_moisture, format_temperature
 from sensors.soil_moisture import soil_init_channels
 from sensors.light import light_init_channels
+from sensors.temperature import temp_init_channels
 
 # == SETUP LOGGING ===
 setup_logging()
@@ -55,6 +56,10 @@ with app.app_context():
     # Initialise light sensors from your DB probes
     light_init_channels()
     logger.info("Light sensors ready!")
+
+    # Initialise temp sensors from your DB probes
+    temp_init_channels()
+    logger.info("Temp sensors ready!")
 
 LOW_MOISTURE_THRESHOLD = 30  # %
 HIGH_TEMP_THRESHOLD = 30 # °C
@@ -102,13 +107,19 @@ def log_readings_loop(interval=os.getenv('INTERVAL')):
                 logging.error("Error logging soil: {e}")
 
             try:
-                temp_val = temperature.read()
-                sensor_name = 'Temp'
-                db.session.add(SensorReading(sensor_type='temperature', value=temp_val))
+                temp_readings = temperature.read_all()
 
-                # CHECK if already alerting
-                high_existing_alert = Alert.query.filter_by(sensor_name=sensor_name, alert_type='High Temperature', status='active').first()
-                low_existing_alert = Alert.query.filter_by(sensor_name=sensor_name, alert_type='Low Temperature', status='active').first()
+                for probe_name, temp_val in temp_readings.items():
+                    if temp_val is None:
+                        continue
+
+                    # Probe-specific sensor name
+                    sensor_name = f"Temp-{probe_name.title()}"  
+                    db.session.add(SensorReading(sensor_type='temperature', value=temp_val, probe_id=probe_name))
+
+                    # CHECK if already alerting
+                    high_existing_alert = Alert.query.filter_by(sensor_name=sensor_name, alert_type='High Temperature', status='active').first()
+                    low_existing_alert = Alert.query.filter_by(sensor_name=sensor_name, alert_type='Low Temperature', status='active').first()
 
                 if temp_val >= HIGH_TEMP_THRESHOLD:
                     if not high_existing_alert:
