@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for
 from models.probes import Probe
-from extensions import db
+from app.extensions import db
 from sensors import soil_moisture, light, temperature
 
 probes_bp = Blueprint('probes', __name__, url_prefix='/probes')
