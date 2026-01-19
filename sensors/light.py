@@ -6,6 +6,7 @@ from typing import Dict, Optional
 from flask import current_app
 from models.probes import Probe
 from utils.logger import get_logger
+import time
 
 
 # =============================
@@ -73,15 +74,21 @@ def light_init_channels():
     """
     global PROBES_CONFIG, SENSORS
     PROBES_CONFIG = get_active_light_probes()
+    logger.info(f"Starting light init with {len(PROBES_CONFIG)} probes")
 
     SENSORS.clear()
     for name, config in PROBES_CONFIG.items():
+        logger.info(f"Trying BH1750({name}) at addr=0x{config['address']:02X}")
         try:
+            time.sleep(0.1)
             sensor = adafruit_bh1750.BH1750(_i2c, address=config['address'])
             SENSORS[name] = sensor
             logger.info(f"Initialized BH1750 for light probe {name}")
         except Exception as e:
             logger.error(f"Failed to init BH1750 for {name}: {e}")
+            logger.error(f"❌ FAILED {name}: TYPE={type(e).__name__} MSG='{e}'")
+            import traceback
+            logger.error(f"TRACEBACK: {''.join(traceback.format_exception(type(e), e, e.__traceback__))}")
 
 # =============================
 # READ SINGLE LIGHT PROBE
