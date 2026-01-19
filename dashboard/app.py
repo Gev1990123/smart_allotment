@@ -12,7 +12,7 @@ from models.sensor_data import SensorReading
 from models.alerts import Alert
 from models.probes import Probe
 from sensors import soil_moisture, temperature, light
-from utils.logger import get_logger
+from utils.logger import setup_logging, get_logger
 import logging
 from dotenv import load_dotenv
 from utils.notifications import alert_high_temperature, alert_low_light, alert_low_temperature, alert_low_moisture
@@ -21,6 +21,7 @@ from sensors.soil_moisture import soil_init_channels
 from sensors.light import light_init_channels
 
 # == SETUP LOGGING ===
+setup_logging()
 logger = get_logger("app")
 logger.info("=== Smart Allotment Dashboard starting ===")
 
