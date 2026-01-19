@@ -7,7 +7,7 @@ import smtplib
 from email.message import EmailMessage
 from dotenv import load_dotenv
 from flask import current_app
-from models.db import db
+from app.extensions import db
 from models.alerts import Alert
 
 load_dotenv()
