@@ -1,5 +1,5 @@
 from datetime import datetime
-from . import db
+from app.extensions import db
 
 class Probe(db.Model):
     __tablename__ = 'probes'
