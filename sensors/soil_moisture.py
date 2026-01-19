@@ -7,13 +7,13 @@ from adafruit_ads1x15.analog_in import AnalogIn
 from typing import Dict, Optional
 from flask import current_app
 from models.probes import Probe
-from utils.logger import setup
+from utils.logger import get_logger
 
 # =============================
 # Setup Logging
 # =============================
 
-setup("sensor.log")
+logger = get_logger("sensors")
 
 # =============================
 # GLOBAL STATE
@@ -44,9 +44,9 @@ def get_active_soil_probes() -> Dict[str, Dict]:
                     'max_threshold': probe.max_value or 90,
                     'description': probe.description or ''
                 }
-                logging.info(f"Loaded soil probe: {probe.name} ({probe.channel})")
+                logger.info(f"Loaded soil probe: {probe.name} ({probe.channel})")
             except AttributeError:
-                logging.error(f"Invalid channel '{probe.channel}' for probe {probe.name}")
+                logger.error(f"Invalid channel '{probe.channel}' for probe {probe.name}")
         
         return probe_config
 
@@ -61,7 +61,7 @@ def soil_init_channels():
     CHANNELS.clear()
     for name, config in PROBES_CONFIG.items():
         CHANNELS[name] = AnalogIn(ads, config['channel'])
-        logging.info(f"Initialized channel for {name}")
+        logger.info(f"Initialized channel for {name}")
 
 # =============================
 # READ SINGLE PROBE
@@ -70,13 +70,13 @@ def read(probe_name: str) -> Optional[float]:
     """Read specific soil probe from database config"""
     probes = get_active_soil_probes()
     if probe_name not in probes:
-        logging.error(f"Unknown soil probe: {probe_name}")
+        logger.error(f"Unknown soil probe: {probe_name}")
         return None
     
     try:
         channel = CHANNELS.get(probe_name)
         if not channel:
-            logging.warning(f"No channel initialized for {probe_name}")
+            logger.warning(f"No channel initialized for {probe_name}")
             return None
         
         config = probes[probe_name]
@@ -92,11 +92,11 @@ def read(probe_name: str) -> Optional[float]:
         ) * 100
         
         result = round(percentage, 1)
-        logging.info(f"{probe_name}: {result}% (V={voltage:.3f}, dry={config['dry']}, wet={config['wet']})")
+        logger.info(f"{probe_name}: {result}% (V={voltage:.3f}, dry={config['dry']}, wet={config['wet']})")
         return result
         
     except Exception as e:
-        logging.error(f"Error reading {probe_name}: {e}")
+        logger.error(f"Error reading {probe_name}: {e}")
         return None
     
 # =============================
@@ -110,5 +110,5 @@ def read_all() -> Dict[str, Optional[float]]:
     for probe_name in soil_probes.keys():
         results[probe_name] = read(probe_name)
     
-    logging.info(f"Read all soil probes: {results}")
+    logger.info(f"Read all soil probes: {results}")
     return results

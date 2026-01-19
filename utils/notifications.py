@@ -1,5 +1,5 @@
 # utils/notifications.py
-from utils.logger import setup
+from utils.logger import get_logger
 import logging
 import os
 from datetime import datetime, timedelta
@@ -18,7 +18,7 @@ TO_EMAIL = os.getenv('TO_EMAIL')
 ADMIN_EMAIL = os.getenv('ADMIN_EMAIL')
 
 ## Setup Logging
-setup("notifications.log")
+logger = get_logger("notifications")
 
 # Type mapping
 ALERT_TYPES = {
@@ -47,17 +47,17 @@ def send_email_alert(subject, body, to_email=None, admin=False):
             server.starttls()
             server.login(SMTP_USER, SMTP_PASS)
             server.send_message(msg)
-        logging.info(f"✅ Email sent successfully: {subject}")
+        logger.info(f"✅ Email sent successfully: {subject}")
         return True
     
     except smtplib.SMTPAuthenticationError:
-        logging.error("❌ Email FAILED - Invalid Gmail credentials")
+        logger.error("❌ Email FAILED - Invalid Gmail credentials")
         return False
     except smtplib.SMTPServerDisconnected:
-        logging.error("❌ Email FAILED - Server disconnected (network issue)")
+        logger.error("❌ Email FAILED - Server disconnected (network issue)")
         return False
     except Exception as e:
-        logging.error(f"❌ Email FAILED - {str(e)}")
+        logger.error(f"❌ Email FAILED - {str(e)}")
         return False
 
 def alert_low_moisture(sensor_name, value):
@@ -65,7 +65,7 @@ def alert_low_moisture(sensor_name, value):
     Alert for low soil moisture.
     """
     if not should_send_alert(sensor_name, 'low_soil_moisture'):
-        logging.info(f"Low Soil Moisture Alert Skipped (cooldown active): {value}%")
+        logger.info(f"Low Soil Moisture Alert Skipped (cooldown active): {value}%")
         return
 
     subject = f"Alert: Low Moisture ({sensor_name})"
@@ -83,7 +83,7 @@ def alert_high_temperature(sensor_name, value):
     """
 
     if not should_send_alert(sensor_name, 'high_temp'):
-        logging.info(f"High Temp Alert Skipped (cooldown active): {value}°C")
+        logger.info(f"High Temp Alert Skipped (cooldown active): {value}°C")
         return
 
     subject = f"Alert: High Temperature ({sensor_name})"
@@ -101,7 +101,7 @@ def alert_low_temperature(sensor_name, value):
     """
 
     if not should_send_alert(sensor_name, 'low_temp'):
-        logging.info(f"Low Temp Alert Skipped (cooldown active): {value}°C")
+        logger.info(f"Low Temp Alert Skipped (cooldown active): {value}°C")
         return
 
     subject = f"Alert: Low Temperature ({sensor_name})"
@@ -119,7 +119,7 @@ def alert_low_light(sensor_name, value):
     """
     
     if not should_send_alert(sensor_name, 'low_light'):
-        logging.info(f"Low Light Alert Skipped (cooldown active): {value} Lux")
+        logger.info(f"Low Light Alert Skipped (cooldown active): {value} Lux")
         return
 
     subject = f"Alert: Low Light ({sensor_name})"
@@ -135,9 +135,9 @@ def should_send_alert(sensor_name, alert_type):
     # Check database for last notification 
     
     real_type = ALERT_TYPES.get(alert_type)
-    logging.info(f"Checking cooldown: {sensor_name}/{alert_type} → {real_type}")
+    logger.info(f"Checking cooldown: {sensor_name}/{alert_type} → {real_type}")
     if not real_type:
-        logging.error(f"Unknown alert_type: {alert_type}")
+        logger.error(f"Unknown alert_type: {alert_type}")
         return False
 
     with current_app.app_context():
@@ -150,11 +150,11 @@ def should_send_alert(sensor_name, alert_type):
         ).first()
        
         if not last_notified_alert or not last_notified_alert.last_notified:
-            logging.info("No previous alert found → SEND")
+            logger.info("No previous alert found → SEND")
             return True
         
         hours_diff = (datetime.utcnow() - last_notified_alert.last_notified).total_seconds() / 3600
-        logging.info(f"Hours since last alert: {hours_diff:.1f}")
+        logger.info(f"Hours since last alert: {hours_diff:.1f}")
         return hours_diff > 4
 
 def mark_alert_sent(sensor_name, alert_type):
@@ -162,7 +162,7 @@ def mark_alert_sent(sensor_name, alert_type):
 
     real_type = ALERT_TYPES.get(alert_type)
     if not real_type:
-        logging.error(f"Unknown alert_type: {alert_type}")
+        logger.error(f"Unknown alert_type: {alert_type}")
         return False
 
     with current_app.app_context():
@@ -175,8 +175,8 @@ def mark_alert_sent(sensor_name, alert_type):
         if recent_alert:
             recent_alert.last_notified = datetime.utcnow()
             db.session.commit()
-            logging.info(f"Marked recent alert #{recent_alert.id} as notified")
+            logger.info(f"Marked recent alert #{recent_alert.id} as notified")
             return True
         
-        logging.info(f"No recent unnotified alert found")
+        logger.info(f"No recent unnotified alert found")
         return False

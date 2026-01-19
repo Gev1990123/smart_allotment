@@ -2,6 +2,13 @@ import glob
 import time
 import logging
 import os
+from utils.logger import get_logger
+
+# =============================
+# Setup Logging
+# =============================
+
+logger = get_logger("sensors")
 
 BASE_DIR = '/sys/bus/w1/devices/'
 DEVICE_ID = '28-0b25516af7db'  # Your sensor ID
