@@ -94,3 +94,7 @@ def setup_logging():
 def get_logger(category: str) -> logging.Logger:
     """Get pre-configured logger: 'app', 'sensors', 'notifications'"""
     return logging.getLogger(category)
+
+def setup(*args, **kwargs):
+    """Deprecated alias for setup_logging"""
+    return setup_logging(*args, **kwargs)
