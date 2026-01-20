@@ -68,10 +68,10 @@ def soil_init_channels():
 # =============================
 def read(probe_name: str) -> Optional[float]:
     """Read specific soil probe from database config"""
-    probes = get_active_soil_probes()
-    if probe_name not in probes:
-        logger.error(f"Unknown soil probe: {probe_name}")
-        return None
+    #probes = get_active_soil_probes()
+    #if probe_name not in probes:
+    #    logger.error(f"Unknown soil probe: {probe_name}")
+    #    return None
     
     try:
         channel = CHANNELS.get(probe_name)
@@ -79,7 +79,7 @@ def read(probe_name: str) -> Optional[float]:
             logger.warning(f"No channel initialized for {probe_name}")
             return None
         
-        config = probes[probe_name]
+        config = PROBES_CONFIG[probe_name]
         voltage = channel.voltage
         
         # Clamp voltage to calibration range

@@ -81,18 +81,18 @@ def read(probe_name: str = None) -> Optional[float]:
     Read specific temperature probe from database config.
     If probe_name is None, read first active probe.
     """
-    probes = get_active_temp_probes()
-    if not probes:
-        logger.error("No active temperature probes found")
-        return None
+    #probes = get_active_temp_probes()
+    #if not probes:
+    #    logger.error("No active temperature probes found")
+    #    return None
 
     # Default to first probe
-    if probe_name is None:
-        probe_name = next(iter(probes.keys()))
+    #if probe_name is None:
+    #    probe_name = next(iter(probes.keys()))
 
-    if probe_name not in probes:
-        logger.error(f"Unknown temp probe: {probe_name}")
-        return None
+    #if probe_name not in probes:
+    #    logger.error(f"Unknown temp probe: {probe_name}")
+    #    return None
 
     try:
         device_file = SENSORS.get(probe_name)
@@ -112,7 +112,7 @@ def read(probe_name: str = None) -> Optional[float]:
                 temp_c = float(temp_string) / 1000.0
                 result = round(temp_c, 1)
                 
-                config = probes[probe_name]
+                config = PROBES_CONFIG[probe_name]
                 # Threshold warnings
                 if result < config['min_threshold']:
                     logger.warning(f"{probe_name}: {result}°C below min {config['min_threshold']}")

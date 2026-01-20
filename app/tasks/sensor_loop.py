@@ -3,6 +3,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import threading
 import time
+import fcntl
 from app.extensions import db
 from sensors import soil_moisture, temperature, light
 from utils.logger import setup_logging, get_logger
@@ -12,7 +13,7 @@ from models.alerts import Alert
 
 # Setup logging FIRST
 setup_logging()
-logger = get_logger("sensor_loop")
+logger = get_logger("app")
 
 LOW_MOISTURE_THRESHOLD = 30
 HIGH_TEMP_THRESHOLD = 30
@@ -196,10 +197,34 @@ def sensor_loop():
 def start_sensor_loop(app):
     """Start daemon thread safely"""
     # Push app context for thread
+
+    lock_file_path = '/tmp/sensor_loop.lock'
+    lock_file = None
+
+    try:
+        lock_file = open(lock_file_path, 'w')
+        fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        logger.info("Sensor loop lock acquired - starting SINGLE instance")
+    except IOError:
+        logger.info("Sensor loop already running elsewhere - SKIPPING")
+        return  # EXIT - don't start duplicate!
+
+
     def run_in_context():
-        with app.app_context():
-            sensor_loop()
-    
+        try:
+            with app.app_context():
+                sensor_loop()
+        finally:
+            # Cleanup lock on exit (optional - file stays for restart protection)
+            if lock_file:
+                try:
+                    fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+                    lock_file.close()
+                    os.unlink(lock_file_path)
+                except:
+                    pass
+
+        
     thread = threading.Thread(target=run_in_context, daemon=True)
     thread.start()
     logger.info("Sensor background thread started")
