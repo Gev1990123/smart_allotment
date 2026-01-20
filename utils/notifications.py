@@ -118,7 +118,7 @@ def alert_low_light(sensor_name, value):
     Alert for low light.
     """
     
-    if not should_send_alert(sensor_name, 'Low Light'):
+    if not should_send_alert(sensor_name, 'low_light'):
         logger.info(f"Low Light Alert Skipped (cooldown active): {value} Lux")
         return
 
