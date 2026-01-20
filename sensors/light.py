@@ -99,18 +99,18 @@ def read(probe_name: str = None) -> Optional[float]:
     If probe_name is None, read the first active light probe.
     Returns lux (float) or None.
     """
-    probes = get_active_light_probes()
-    if not probes:
-        logger.error("No active light probes found")
-        return None
+    #probes = get_active_light_probes()
+    #if not probes:
+    #    logger.error("No active light probes found")
+    #    return None
 
     # Default to first configured light probe if not specified
-    if probe_name is None:
-        probe_name = next(iter(probes.keys()))
+    #if probe_name is None:
+    #    probe_name = next(iter(probes.keys()))
 
-    if probe_name not in probes:
-        logger.error(f"Unknown light probe: {probe_name}")
-        return None
+    #if probe_name not in probes:
+    #    logger.error(f"Unknown light probe: {probe_name}")
+    #    return None
 
     try:
         sensor = SENSORS.get(probe_name)
@@ -118,7 +118,7 @@ def read(probe_name: str = None) -> Optional[float]:
             logger.warning(f"No BH1750 initialized for {probe_name}")
             return None
 
-        config = probes[probe_name]
+        config = PROBES_CONFIG[probe_name]
 
         # BH1750 .lux gives ambient light in lux directly.[web:2][web:11]
         lux = sensor.lux
