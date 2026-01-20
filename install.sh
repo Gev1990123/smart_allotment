@@ -22,7 +22,9 @@ fi
 # PostgreSQL setup
 echo "PostgreSQL setup..."
 sudo systemctl restart postgresql && sudo systemctl enable postgresql
-sudo -u postgres psql -c "CREATE USER IF NOT EXISTS smartallotment WITH PASSWORD 'smartallotment' CREATEDB;"
+# Check if user exists before creating (PostgreSQL 17 compatibility)
+sudo -u postgres psql -tAc "SELECT 1 FROM pg_catalog.pg_roles WHERE rolname='smartallotment'" | grep -q 1 || \
+sudo -u postgres psql -c "CREATE USER smartallotment WITH PASSWORD 'smartallotment' CREATEDB;"
 sudo -u postgres psql -c "CREATE DATABASE smart_allotment OWNER smartallotment;"
 sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE smart_allotment TO smartallotment;"
 
