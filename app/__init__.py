@@ -30,7 +30,7 @@ def create_app(config_class=DevConfig):
     
     # Initialize sensors ONCE at startup
     with app.app_context():
-        db.create_all()
+        #db.create_all()
         from sensors.soil_moisture import soil_init_channels
         from sensors.light import light_init_channels
         from sensors.temperature import temp_init_channels
