@@ -7,7 +7,7 @@ import time
 from app.extensions import db
 from sensors import soil_moisture, temperature, light
 from utils.logger import setup_logging, get_logger
-from utils.notifications import alert_high_temperature, alert_low_light, alert_low_temperature, alert_low_moisture
+from utils.notifications import alert_high_temperature, alert_low_light, alert_low_temperature, alert_low_moisture, should_send_alert
 from models.sensor_data import SensorReading
 from models.alerts import Alert
 
@@ -82,23 +82,49 @@ def sensor_loop():
                     db.session.commit()
                 db.session.commit()
 
-            # LIGHT (YOUR ORIGINAL LOGIC - perfect)  
+            # LIGHT
+            # Take a reading from all light sensors
             light_readings = light.read_all()
+
+            # Loop through each sensor reading (probe_name = sensor ID, light_val = lux reading)
             for probe_name, light_val in light_readings.items():
+                # Skip if sensor failed to read (None = hardware/sensor error)
                 if light_val is None:
                     continue
+
+                # Create consistent sensor name: "Light-Probe1", "Light-Probe2", etc.
                 sensor_name = f"Light-{probe_name.title()}"
+
+                # ALWAYS log every reading to SensorReading table (complete history)
                 db.session.add(SensorReading(sensor_type='light', value=light_val, probe_id=probe_name))
                 
+                # Check if there's already an ACTIVE alert for this specific sensor/light condition
+                # This query ignores reading value - only cares about alert state
                 existing_alert = Alert.query.filter_by(sensor_name=sensor_name, alert_type='Low Light', status='active').first()
+                
+                # THRESHOLD BREACH: light_val <= LOW_LIGHT_THRESHOLD (e.g., <= 50 lux)
                 if light_val <= LOW_LIGHT_THRESHOLD:
+                    # FIRST TIME BREACH: No existing active alert found
                     if not existing_alert:
+                        # Create new active alert record (this triggers first notification via should_send_alert)
                         db.session.add(Alert(alert_type='Low Light', sensor_name=sensor_name, value=light_val))
+                        # Commit immediately so alert appears in DB for next checks
                         db.session.commit()
-                    alert_low_light(sensor_name, light_val)
-                elif existing_alert and light_val > LOW_LIGHT_THRESHOLD:
+                        alert_low_light(sensor_name, light_val)  #Send first notification immediedatley 
+                    else: 
+                        # ONGOING BREACH: Alert already exists, check 4hr notification cooldown
+                        # should_send_alert() checks last_notified timestamp in Alert table
+                        if should_send_alert(sensor_name, 'low_light'):
+                            # 4+ hours passed → Send email notification
+                            alert_low_light(sensor_name, light_val)
+
+                # CONDITION RESOLVED: Reading now normal AND alert was active
+                elif existing_alert and light_val >= LOW_LIGHT_THRESHOLD:
+                    # Problem fixed → Mark alert as resolved (stops future notifications)
                     existing_alert.status = 'resolved'
                     db.session.commit()
+
+                 # Final commit for SensorReading + any other changes    
                 db.session.commit()
 
             logger.info(f"Sensor cycle complete. Sleeping {INTERVAL_SECS}s")
