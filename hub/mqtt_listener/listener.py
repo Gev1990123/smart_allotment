@@ -54,7 +54,7 @@ def on_message(client, userdata, msg):
 
 client = mqtt.Client()
 client.username_pw_set(MQTT_USER, MQTT_PASS)
-client.tls_set(ca_certs="/listener/certs/ca.crt")
+#client.tls_set(ca_certs="/listener/certs/ca.crt")
 client.on_connect = on_connect
 client.on_message = on_message
 
