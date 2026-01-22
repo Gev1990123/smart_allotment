@@ -1,6 +1,4 @@
--- Create your exact schema
-CREATE DATABASE sensors;
-\c sensors;
+\connect sensors
 
 CREATE EXTENSION IF NOT EXISTS timescaledb;
 
