@@ -48,10 +48,11 @@ services:
     environment:
       # MQTT
       MQTT_HOST: mqtt
-      MQTT_PORT: 8883
-      MQTT_USERNAME: matt
-      MQTT_PASSWORD: mqtt123
-      MQTT_CA_CERT: /listener/certs/ca.crt
+      MQTT_PORT: 1883
+      #MQTT_PORT: 8883
+      MQTT_USERNAME: ""
+      MQTT_PASSWORD: ""
+      #MQTT_CA_CERT: /listener/certs/ca.crt
 
       # POSTGRES
       PSQL_HOST: database
@@ -61,7 +62,7 @@ services:
       PSQL_DB: sensors
     volumes:
       - ./mqtt_listener:/listener
-      - ./mqtt/certs/ca.crt:/listener/certs/ca.crt:ro
+      #- ./mqtt/certs/ca.crt:/listener/certs/ca.crt:ro
     networks:
       - backend
 
