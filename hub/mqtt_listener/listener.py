@@ -13,7 +13,7 @@ DB_NAME = os.getenv("PSQL_DB", "sensors")
 
 # MQTT config  
 MQTT_HOST = os.getenv("MQTT_HOST", "mqtt")
-MQTT_PORT = int(os.getenv("MQTT_PORT", "8883"))
+MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
 MQTT_USER = os.getenv("MQTT_USERNAME", "matt")
 MQTT_PASS = os.getenv("MQTT_PASSWORD", "mqtt123")
 
