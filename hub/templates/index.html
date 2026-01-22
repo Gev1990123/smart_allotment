@@ -5,52 +5,10 @@
     <title>Smart Allotment Dashboard</title>
 
     <!-- CSS -->
-    /static/css/styles.css
+    <link rel="stylesheet" href="/static/css/styles.css">
 
     <!-- Chart.js -->
-    https://cdn.jsdelivr.net/npm/chart.js
-
-    <style>
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: #f7f7f7;
-        }
-
-        header {
-            background: #2e7d32;
-            color: white;
-            padding: 15px 25px;
-        }
-
-        h1 {
-            margin: 0;
-            font-size: 24px;
-        }
-
-        main {
-            padding: 25px;
-        }
-
-        .device-selector {
-            margin-bottom: 20px;
-        }
-
-        .latest-box {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 25px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-
-        .chart-container {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
@@ -173,12 +131,5 @@
         chart.data.labels = times;
         chart.data.datasets[0].data = values;
         chart.update();
-    }
-
-    // Initial load
-    loadDevices();
-
-</script>
-
-</body>
+   </body>
 </html>
