@@ -84,8 +84,13 @@ services:
       PSQL_USER: mqtt
       PSQL_PASS: mqtt123
       PSQL_DB: sensors
+    volumes:
+      - ./api:/api
+      - ./static:/api/static
+      - ./templates:/api/templates
     networks:
       - backend
+
 
 # -------------------------------
 # NETWORK TO CONNECT ALL SERVICES
@@ -93,3 +98,4 @@ services:
 networks:
   backend:
     driver: bridge
+
