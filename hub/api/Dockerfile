@@ -2,6 +2,8 @@ FROM python:3.11-slim
 
 WORKDIR /api
 
+COPY ../static ./static
+COPY ../templates ./templates
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
