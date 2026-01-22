@@ -1,62 +1,59 @@
-
 ----------------------------------------------------------------------
 -- Smart Allotment PostgreSQL Schema
--- This file initializes the hub database
+-- Long-table format: one sensor per row
 ----------------------------------------------------------------------
 
--- Drop tables if they already exist (optional for rebuilds)
 DROP TABLE IF EXISTS pump_events;
-DROP TABLE IF EXISTS telemetry;
+DROP TABLE IF EXISTS sensor_data;
 DROP TABLE IF EXISTS sites;
 
 ----------------------------------------------------------------------
--- Sites table
--- Each Raspberry Pi node represents one site/location
+-- Sites
 ----------------------------------------------------------------------
 
 CREATE TABLE sites (
     id SERIAL PRIMARY KEY,
     site_code VARCHAR(50) UNIQUE NOT NULL,
     friendly_name TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 ----------------------------------------------------------------------
--- Telemetry table
--- Stores sensor measurements from each site
+-- Sensor Data (one row per sensor reading)
 ----------------------------------------------------------------------
 
-CREATE TABLE telemetry (
+CREATE TABLE sensor_data (
     id BIGSERIAL PRIMARY KEY,
+
     site_id INTEGER NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
-    timestamp TIMESTAMP NOT NULL,
 
-    -- Standard sensor values
-    soil_moisture NUMERIC,
-    water_level NUMERIC,
-    humidity NUMERIC,
-    temperature NUMERIC,
+    -- Device identifier (Raspberry Pi, ESP32, etc.)
+    device_id VARCHAR(50) NOT NULL,
 
-    -- Optional JSON field for flexible future sensor data
-    raw_json JSONB,
+    timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-    -- Index for fast queries
-    INDEX (site_id, timestamp)
+    -- Your requested data structure:
+    sensor_name VARCHAR(50) NOT NULL,        -- e.g. "soil_moisture"
+    sensor_value DOUBLE PRECISION NOT NULL,  -- e.g. "42.5"
+    unit VARCHAR(20),                        -- e.g. "%"
+
+    raw JSONB
 );
 
+CREATE INDEX idx_sensor_data_site_time ON sensor_data(site_id, timestamp);
+CREATE INDEX idx_sensor_data_device_time ON sensor_data(device_id, timestamp);
+CREATE INDEX idx_sensor_name ON sensor_data(sensor_name);
+
 ----------------------------------------------------------------------
--- Pump events table
--- Records water pump activity (manual or automated)
+-- Pump Events
 ----------------------------------------------------------------------
 
 CREATE TABLE pump_events (
     id SERIAL PRIMARY KEY,
     site_id INTEGER NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
-    event_time TIMESTAMP NOT NULL,
-    action VARCHAR(10) NOT NULL,     -- 'on' or 'off'
-    triggered_by VARCHAR(50)         -- 'manual', 'rule', 'mqtt', etc.
+    event_time TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    action VARCHAR(10) NOT NULL,
+    triggered_by VARCHAR(50)
 );
 
-----------------------------------------------------------------------
--- End of schema
-----------------------------------------------------------------------
+CREATE INDEX idx_pump_events_site_time ON pump_events(site_id, event_time);
