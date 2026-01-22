@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Smart Allotment Dashboard</title>
+
+    <!-- CSS -->
+    /static/css/styles.css
+
+    <!-- Chart.js -->
+    https://cdn.jsdelivr.net/npm/chart.js
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f7f7f7;
+        }
+
+        header {
+            background: #2e7d32;
+            color: white;
+            padding: 15px 25px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        main {
+            padding: 25px;
+        }
+
+        .device-selector {
+            margin-bottom: 20px;
+        }
+
+        .latest-box {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h1>🌱 Smart Allotment Dashboard</h1>
+</header>
+
+<main>
+
+    <!-- Device Picker -->
+    <div class="device-selector">
+        <label for="deviceSelect"><strong>Select Device:</strong></label>
+        <select id="deviceSelect"></select>
+    </div>
+
+    <!-- Latest Reading Summary -->
+    <div class="latest-box">
+        <h2>Latest Reading</h2>
+        <p id="latestOutput">Select a device...</p>
+    </div>
+
+    <!-- Chart Area -->
+    <div class="chart-container">
+        <canvas id="historyChart"></canvas>
+    </div>
+
+</main>
+
+<script>
+    // -----------------------------
+    // Fetch list of devices
+    // -----------------------------
+    async function loadDevices() {
+        const res = await fetch("/sensors");
+        const data = await res.json();
+
+        const select = document.getElementById("deviceSelect");
+        select.innerHTML = "";
+
+        data.devices.forEach(device => {
+            const opt = document.createElement("option");
+            opt.value = device;
+            opt.textContent = device;
+            select.appendChild(opt);
+        });
+
+        // Load data for first device
+        if (data.devices.length > 0) {
+            loadLatest(data.devices[0]);
+            loadHistory(data.devices[0]);
+        }
+    }
+
+    document.getElementById("deviceSelect").addEventListener("change", e => {
+        loadLatest(e.target.value);
+        loadHistory(e.target.value);
+    });
+
+
+    // -----------------------------
+    // Fetch latest reading
+    // -----------------------------
+    async function loadLatest(device_id) {
+        const res = await fetch(`/latest/${device_id}`);
+        const data = await res.json();
+
+        const out = document.getElementById("latestOutput");
+
+        if (!data || data.error) {
+            out.textContent = "No data available.";
+            return;
+        }
+
+        out.innerHTML = `
+            <strong>Device:</strong> ${device_id}<br>
+            <strong>Sensor:</strong> ${data.sensor_name}<br>
+            <strong>Value:</strong> ${data.sensor_value} ${data.unit || ""}<br>
+            <strong>Timestamp:</strong> ${new Date(data.timestamp).toLocaleString()}
+        `;
+    }
+
+    // -----------------------------
+    // Chart.js Setup (empty chart)
+    // -----------------------------
+    const ctx = document.getElementById("historyChart").getContext("2d");
+    const chart = new Chart(ctx, {
+        type: "line",
+        data: {
+            labels: [],
+            datasets: [{
+                label: "Sensor Value",
+                data: [],
+                borderColor: "#2e7d32",
+                borderWidth: 2,
+                fill: false
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                x: { title: { display: true, text: "Time" }},
+                y: { title: { display: true, text: "Value" }}
+            }
+        }
+    });
+
+    // -----------------------------
+    // Fetch history + update chart
+    // -----------------------------
+    async function loadHistory(device_id) {
+        const res = await fetch(`/history/${device_id}?hours=24`);
+        const data = await res.json();
+
+        if (!Array.isArray(data)) return;
+
+        const times = data.map(r => new Date(r.timestamp).toLocaleTimeString());
+        const values = data.map(r => r.sensor_value);
+
+        chart.data.labels = times;
+        chart.data.datasets[0].data = values;
+        chart.update();
+    }
+
+    // Initial load
+    loadDevices();
+
+</script>
+
+</body>
+</html>
