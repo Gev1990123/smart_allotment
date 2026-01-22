@@ -1,13 +1,19 @@
-
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from db import get_connection
 
 app = FastAPI(title="Smart Allotment API")
 
-# -----------------------------
+# Static + templates (absolute paths inside the container)
+app.mount("/static", StaticFiles(directory="/api/static"), name="static")
+templates = Jinja2Templates(directory="/api/templates")
+
+
+# ---------------------------------------------------------
 # HEALTH CHECK
-# -----------------------------
+# ---------------------------------------------------------
 @app.get("/health")
 def health():
     try:
@@ -17,14 +23,16 @@ def health():
     except Exception as e:
         return JSONResponse(status_code=500, content={"status": "error", "details": str(e)})
 
-# -----------------------------
+
+# ---------------------------------------------------------
 # GET LATEST READING FOR DEVICE
-# -----------------------------
+# ---------------------------------------------------------
 @app.get("/latest/{device_id}")
 def get_latest(device_id: str):
     try:
         conn = get_connection()
         cur = conn.cursor()
+
         cur.execute("""
             SELECT *
             FROM sensor_data
@@ -32,51 +40,85 @@ def get_latest(device_id: str):
             ORDER BY timestamp DESC
             LIMIT 1;
         """, (device_id,))
+
         row = cur.fetchone()
         conn.close()
 
         if not row:
             return JSONResponse(status_code=404, content={"error": "No data found"})
+
         return row
 
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
 
-# -----------------------------
-# GET HISTORICAL DATA
-# -----------------------------
+
+# ---------------------------------------------------------
+# GET HISTORY FOR A DEVICE (using your new schema)
+# ---------------------------------------------------------
 @app.get("/history/{device_id}")
 def get_history(device_id: str, hours: int = 24):
     try:
         conn = get_connection()
         cur = conn.cursor()
+
         cur.execute("""
             SELECT *
             FROM sensor_data
             WHERE device_id = %s
-              AND timestamp > NOW() - INTERVAL '%s hours'
+              AND timestamp > NOW() - (%s || ' hours')::interval
             ORDER BY timestamp ASC;
         """, (device_id, hours))
 
         rows = cur.fetchall()
         conn.close()
+
         return rows
 
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
 
-# -----------------------------
-# LIST ALL DEVICES
-# -----------------------------
+
+# ---------------------------------------------------------
+# LIST ALL UNIQUE DEVICES
+# ---------------------------------------------------------
 @app.get("/sensors")
 def list_sensors():
     try:
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute("SELECT DISTINCT device_id FROM sensor_data;")
-        rows = cur.fetchall()
+
+        cur.execute("SELECT DISTINCT device_id FROM sensor_data ORDER BY device_id;")
+        rows = [r[0] for r in cur.fetchall()]  # flatten
+
         conn.close()
-        return rows
+
+        return {"devices": rows}
 
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+# ---------------------------------------------------------
+# UI ROUTES (HTML Templates)
+# ---------------------------------------------------------
+
+@app.get("/")
+def dashboard(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
+
+
+@app.get("/device/{device_id}")
+def device_page(device_id: str, request: Request):
+    return templates.TemplateResponse(
+        "device.html",
+        {"request": request, "device_id": device_id}
+    )
+
+
+@app.get("/site/{site_id}")
+def site_page(site_id: int, request: Request):
+    return templates.TemplateResponse(
+        "site.html",
+        {"request": request, "site_id": site_id}
+    )
