@@ -10,7 +10,7 @@ data/smart_allotment.db
 data/*.db
 
 # Data
-data/
+#data/
 
 # Virtual environment
 venv/

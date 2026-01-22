@@ -1,13 +1,13 @@
 import psycopg2
 from psycopg2.extras import RealDictCursor
-from config import settings
+import os
 
 def get_connection():
     return psycopg2.connect(
-        host=settings.PSQL_HOST,
-        port=settings.PSQL_PORT,
-        user=settings.PSQL_USER,
-        password=settings.PSQL_PASS,
-        dbname=settings.PSQL_DB,
+        host=os.getenv("PSQL_HOST", "database"),
+        port=os.getenv("PSQL_PORT", "5432"),
+        user=os.getenv("PSQL_USER", "mqtt"),
+        password=os.getenv("PSQL_PASS", "mqtt123"),
+        database=os.getenv("PSQL_DB", "sensors"),
         cursor_factory=RealDictCursor
     )

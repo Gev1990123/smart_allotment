@@ -1,4 +1,6 @@
-mqtt_listener:
-  build: ./mqtt_listener
-  container_name: mqtt_listener
-  restart: unless-stopped
+FROM python:3.11-slim
+WORKDIR /listener
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+CMD ["python", "listener.py"]
