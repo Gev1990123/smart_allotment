@@ -1,0 +1,50 @@
+
+version: '3.8'
+
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    container_name: mosquitto
+    restart: unless-stopped
+    ports:
+      - "8883:8883"
+    volumes:
+      - ./config:/mosquitto/config
+      - ./data:/mosquitto/data
+      - ./log:/mosquitto/log
+      - ./certs:/mosquitto/certs
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: mqtt
+      POSTGRES_PASSWORD: mqtt123
+      POSTGRES_DB: sensors
+    volumes:
+      - ./postgres/data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+
+  collector:
+    build: ./collector
+    container_name: collector
+    restart: unless-stopped
+    depends_on:
+      - mosquitto
+      - postgres
+    volumes:
+      - ./collector:/collector
+    environment:
+      PSQL_HOST: postgres
+      PSQL_USER: mqtt
+      PSQL_PASS: mqtt123
+      PSQL_DB: sensors
+      MQTT_HOST: mosquitto
+      MQTT_PORT: 8883
+      MQTT_CA: /collector/certs/ca.crt
+``
