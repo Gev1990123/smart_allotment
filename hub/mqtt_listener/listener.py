@@ -35,10 +35,17 @@ def on_message(client, userdata, msg):
         conn = connect_db()
         cur = conn.cursor()
         cur.execute("""
-            INSERT INTO sensors (sensor_id, timestamp, temperature, humidity) 
-            VALUES (%s, %s, %s, %s)
-        """, (msg.topic.split('/')[1], datetime.now(), 
-              data.get('temp'), data.get('humidity')))
+            INSERT INTO sensor_data (device_id, timestamp, temperature, humidity, soil_moisture, location, battery_voltage)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """, (
+            msg.topic.split('/')[1],           
+            datetime.now(),                      
+            data.get('temperature'),           
+            data.get('humidity'),
+            data.get('soil_moisture'),
+            data.get('location'),
+            data.get('battery_voltage')
+        ))
         conn.commit()
         cur.close()
         conn.close()
