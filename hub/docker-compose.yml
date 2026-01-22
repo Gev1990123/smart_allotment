@@ -21,7 +21,7 @@ services:
   # POSTGRESQL DATABASE
   # -------------------------------
   database:
-    image: postgres:16
+    image: timescale/timescaledb:latest-pg16
     container_name: postgres
     restart: unless-stopped
     environment:
