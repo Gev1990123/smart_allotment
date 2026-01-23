@@ -1,6 +1,6 @@
 cat > database/init.sql << 'EOF'
 CREATE TABLE IF NOT EXISTS sensor_data (
-    time TIMESTAMPTAMPTZ NOT NULL,
+    time TIMESTAMPTZ NOT NULL,
     sensor_id VARCHAR(50) NOT NULL,
     moisture INTEGER,
     temperature FLOAT,
