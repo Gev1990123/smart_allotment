@@ -115,7 +115,10 @@ def list_sensors():
         cur = conn.cursor()
 
         cur.execute("SELECT DISTINCT device_id FROM sensor_data ORDER BY device_id;")
-        rows = [r[0] for r in cur.fetchall()]  # flatten
+        print(cur)
+        rows = [r[0] for r in cur.fetchall()]
+        print(rows)
+
 
         conn.close()
 
