@@ -1,8 +1,6 @@
-> database/init.sql  # Empty the file
-cat >> database/init.sql << 'EOF'
--- Smart Allotment PostgreSQL - Docker auto-creates DB/user
+cat > database/init.sql << 'EOF'
 CREATE TABLE IF NOT EXISTS sensor_data (
-    time TIMESTAMPTZ NOT NULL,
+    time TIMESTAMPTAMPTZ NOT NULL,
     sensor_id VARCHAR(50) NOT NULL,
     moisture INTEGER,
     temperature FLOAT,
