@@ -49,10 +49,8 @@ services:
     container_name: mqtt_listener
     restart: unless-stopped
     depends_on:
-      mqtt:
-        condition: service_healthy
-      database:
-        condition: service_healthy
+      - mqtt
+      - database
     environment:
       # MQTT
       MQTT_HOST: mqtt
