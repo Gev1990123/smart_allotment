@@ -42,7 +42,7 @@ def get_latest(device_id: str):
         cur = conn.cursor()
 
         cur.execute("""
-            SELECT time, device_id, sensor_id, moisture, temperature, light
+            SELECT time, device_id, sensor_id, sensor_type, value, unit
             FROM sensor_data
             WHERE device_id = %s
             ORDER BY time DESC
@@ -59,33 +59,36 @@ def get_latest(device_id: str):
         sensors = []
 
         # Moisture
-        if row[3] is not None:
+        if row[3] == "moisture":
             sensors.append({
                 "timestamp": row[0],
                 "device_id": row[1],
-                "sensor_name": "moisture",
-                "sensor_value": row[3],
-                "unit": "%"
+                "sensor_type": row[3],
+                "sensor_name": row[2],
+                "sensor_value": row[4],
+                "unit": row[5]
             })
         
         # Temperature  
-        if row[4] is not None:
-            sensors.append({
-                "timestamp": row[0],
-                "device_id": row[1], 
-                "sensor_name": "temperature",
-                "sensor_value": row[4],
-                "unit": "°C"
-            })
-        
-        # Light
-        if row[5] is not None:  # Note: light is index 5
+        if row[3] == "temperature":
             sensors.append({
                 "timestamp": row[0],
                 "device_id": row[1],
-                "sensor_name": "light", 
-                "sensor_value": row[5],
-                "unit": "lux"
+                "sensor_type": row[3],
+                "sensor_name": row[2],
+                "sensor_value": row[4],
+                "unit": row[5]
+            })
+        
+        # Light
+        if row[3] == "light":
+            sensors.append({
+                "timestamp": row[0],
+                "device_id": row[1],
+                "sensor_type": row[3],
+                "sensor_name": row[2],
+                "sensor_value": row[4],
+                "unit": row[5]
             })
 
         return sensors
@@ -103,7 +106,6 @@ def get_history(device_id: str, hours: int = 24):
         conn = get_connection()
         cur = conn.cursor()
 
-        # FIXED: Use 'time' column + return frontend-expected format
         cur.execute("""
             SELECT time, device_id, sensor_id, moisture, temperature
             FROM sensor_data

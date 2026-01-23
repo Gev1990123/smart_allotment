@@ -84,29 +84,35 @@ def on_message(client, userdata, msg):
 
             # Dynamic INSERT based on sensor type
             if sensor['type'] == 'temperature':
-                cur.execute("""INSERT INTO sensor_data (time, sensor_id, temperature, device_id) 
+                cur.execute("""INSERT INTO sensor_data (time, device_id, sensor_id, sensor_type, value, unit) 
                             VALUES (%s, %s, %s, %s)""",
                             (
                             current_time, 
+                            device_id, 
                             sensor_id, 
+                            sensor['type'], 
                             sensor['value'], 
-                            device_id))
+                            sensor.get('unit', 'C')))
             elif sensor['type'] == 'moisture':
-                cur.execute("""INSERT INTO sensor_data (time, sensor_id, moisture, device_id) 
-                            VALUES (%s, %s, %s, %s)""",
+                cur.execute("""INSERT INTO sensor_data (time, device_id, sensor_id, sensor_type, value, unit) 
+                            VALUES (%s, %s, %s, %s, %s, %s)""",
                             (
                             current_time, 
+                            device_id, 
                             sensor_id, 
+                            sensor['type'], 
                             sensor['value'], 
-                            device_id))
+                            sensor.get('unit', '%')))
             elif sensor['type'] == 'light':
-                cur.execute("""INSERT INTO sensor_data (time, sensor_id, light, device_id) 
-                            VALUES (%s, %s, %s, %s)""",
+                cur.execute("""INSERT INTO sensor_data (time, device_id, sensor_id, sensor_type, value, unit) 
+                            VALUES (%s, %s, %s, %s, %s, %s)""",
                             (
                             current_time, 
+                            device_id, 
                             sensor_id, 
+                            sensor['type'], 
                             sensor['value'], 
-                            device_id))
+                            sensor.get('unit', 'lux')))
                     
         conn.commit()
         cur.close()
