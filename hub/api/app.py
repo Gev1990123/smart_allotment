@@ -33,11 +33,13 @@ def get_latest(device_id: str):
         conn = get_connection()
         cur = conn.cursor()
 
+        # FIXED: Use 'time' column (not 'timestamp')
         cur.execute("""
-            SELECT *
+            SELECT time, device_id, sensor_id, moisture, temperature, 
+                   humidity, battery_voltage, rssi
             FROM sensor_data
             WHERE device_id = %s
-            ORDER BY timestamp DESC
+            ORDER BY time DESC
             LIMIT 1;
         """, (device_id,))
 
@@ -47,11 +49,25 @@ def get_latest(device_id: str):
         if not row:
             return JSONResponse(status_code=404, content={"error": "No data found"})
 
-        return row
+        # FIXED: Return named object frontend expects
+        time_idx, device_idx, sensor_idx, moisture_idx, temp_idx = 0, 1, 2, 3, 4
+        
+        return {
+            "timestamp": row[time_idx],
+            "device_id": row[device_idx],
+            "sensor_id": row[sensor_idx],
+            "sensor_name": row[sensor_idx],  # Frontend uses this
+            "sensor_value": row[moisture_idx] or row[temp_idx],  # moisture OR temp
+            "moisture": row[moisture_idx],
+            "temperature": row[temp_idx],
+            "humidity": row[5],
+            "battery_voltage": row[6],
+            "rssi": row[7],
+            "unit": "%"  # For moisture
+        }
 
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
-
 
 # ---------------------------------------------------------
 # GET HISTORY FOR A DEVICE (using your new schema)
