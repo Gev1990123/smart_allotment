@@ -78,22 +78,32 @@ def get_history(device_id: str, hours: int = 24):
         conn = get_connection()
         cur = conn.cursor()
 
+        # FIXED: Use 'time' column + return frontend-expected format
         cur.execute("""
-            SELECT *
+            SELECT time, device_id, sensor_id, moisture, temperature
             FROM sensor_data
             WHERE device_id = %s
-              AND timestamp > NOW() - (%s || ' hours')::interval
-            ORDER BY timestamp ASC;
+              AND time > NOW() - INTERVAL '%s hours'
+            ORDER BY time ASC;
         """, (device_id, hours))
 
-        rows = cur.fetchall()
+        raw_rows = cur.fetchall()
         conn.close()
 
+        # MAP raw rows → frontend-expected objects
+        rows = []
+        for row in raw_rows:
+            rows.append({
+                "timestamp": row[0],
+                "sensor_value": row[3] or row[4] or 0,  # moisture OR temp
+                "moisture": row[3],
+                "temperature": row[4]
+            })
+        
         return rows
 
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
-
 
 # ---------------------------------------------------------
 # LIST ALL UNIQUE DEVICES
