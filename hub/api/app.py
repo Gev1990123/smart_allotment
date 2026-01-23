@@ -61,35 +61,34 @@ def get_latest(device_id: str):
         # Moisture
         if row[3] == "moisture":
             sensors.append({
-                "timestamp": row[0],
-                "device_id": row[1],
-                "sensor_type": row[3],
                 "sensor_name": row[2],
                 "sensor_value": row[4],
-                "unit": row[5]
+                "unit": row[5],
+                "sensor_type": row[3],
+                "timestamp": row[0],                
             })
         
         # Temperature  
         if row[3] == "temperature":
             sensors.append({
-                "timestamp": row[0],
-                "device_id": row[1],
-                "sensor_type": row[3],
                 "sensor_name": row[2],
                 "sensor_value": row[4],
-                "unit": row[5]
+                "unit": row[5],
+                "sensor_type": row[3],
+                "timestamp": row[0],                
             })
+        
         
         # Light
         if row[3] == "light":
             sensors.append({
-                "timestamp": row[0],
-                "device_id": row[1],
-                "sensor_type": row[3],
                 "sensor_name": row[2],
                 "sensor_value": row[4],
-                "unit": row[5]
+                "unit": row[5],
+                "sensor_type": row[3],
+                "timestamp": row[0],                
             })
+        
 
         return sensors
 
@@ -107,7 +106,7 @@ def get_history(device_id: str, hours: int = 24):
         cur = conn.cursor()
 
         cur.execute("""
-            SELECT time, device_id, sensor_id, moisture, temperature
+            SELECT time, device_id, sensor_id, sensor_type, value, unit
             FROM sensor_data
             WHERE device_id = %s
               AND time > NOW() - INTERVAL '%s hours'
@@ -121,10 +120,11 @@ def get_history(device_id: str, hours: int = 24):
         rows = []
         for row in raw_rows:
             rows.append({
+                "sensor_name": row[2],
                 "timestamp": row[0],
-                "sensor_value": row[3] or row[4] or 0,  # moisture OR temp
-                "moisture": row[3],
-                "temperature": row[4]
+                "sensor_value": row[4],
+                "sensor_type": row[3],
+                "unit": row[5]
             })
         
         return rows
@@ -135,8 +135,8 @@ def get_history(device_id: str, hours: int = 24):
 # ---------------------------------------------------------
 # LIST ALL UNIQUE DEVICES
 # ---------------------------------------------------------
-@app.get("/sensors")
-def list_sensors():
+@app.get("/devices")
+def list_devices():
     conn = None
     try:
         conn = get_connection()
@@ -151,6 +151,33 @@ def list_sensors():
         conn.close()
 
         return {"devices": devices}
+
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+    
+    finally:
+        if conn:
+            conn.close
+
+# ---------------------------------------------------------
+# LIST ALL UNIQUE SENSORS
+# ---------------------------------------------------------
+@app.get("/sensors")
+def list_sensors():
+    conn = None
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        cur.execute("SELECT DISTINCT sensor_id FROM sensor_data WHERE sensor_id IS NOT NULL ORDER BY sensor_id;")
+        rows = cur.fetchall()
+        sensors = [row[0] for row in rows]
+
+        print(f"Found sensors: {sensors}")
+        
+        conn.close()
+
+        return {"sensors": sensors}
 
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})

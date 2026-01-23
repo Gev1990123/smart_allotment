@@ -69,6 +69,19 @@ def on_connect(client, userdata, flags, rc):
         logger.error(f"Connection failed with code {rc}")
 
 def on_message(client, userdata, msg):
+
+    """
+    {
+    "device_id": "device001",
+    "sensors": [
+        {"type": "moisture", "id": "soil-sensor-001", "value": 65},
+        {"type": "moisture", "id": "soil-sensor-002", "value": 72},
+        {"type": "temperature", "id": "temp-sensor-001", "value": 18.2},
+        {"type": "light", "id": "light-sensor-001", "value": 450}
+    ]
+    }
+
+    """
     try:
         data = json.loads(msg.payload.decode())
         logger.info(f"Received: {data} from {msg.topic}")
