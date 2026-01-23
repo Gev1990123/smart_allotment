@@ -2,7 +2,7 @@
 import paho.mqtt.client as mqtt
 import psycopg2
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 import os
 import time
 import logging
@@ -80,12 +80,12 @@ def on_message(client, userdata, msg):
         # Loop through all sensors in the payload
         for sensor in data.get('sensors', []):
             sensor_id = f"{sensor['id']}" 
-            current_time = datetime.now(time.timezone.utc)
+            current_time = datetime.now(timezone.utc)
 
             # Dynamic INSERT based on sensor type
             if sensor['type'] == 'temperature':
                 cur.execute("""INSERT INTO sensor_data (time, device_id, sensor_id, sensor_type, value, unit) 
-                            VALUES (%s, %s, %s, %s)""",
+                            VALUES (%s, %s, %s, %s, %s, %s)""",
                             (
                             current_time, 
                             device_id, 
