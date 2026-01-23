@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 DB_HOST = os.getenv("PSQL_HOST", "database")
 DB_PORT = int(os.getenv("PSQL_PORT", "5432"))
 DB_USER = os.getenv("PSQL_USER", "mqtt")
-DB_PASS = os.getenv("PSQL_PASS", "mqtt123")
+DB_PASS = os.getenv("PSQL_PASS", "smartallotment2026")
 DB_NAME = os.getenv("PSQL_DB", "sensors")
 
 # MQTT config - FIXED: Use empty credentials from env

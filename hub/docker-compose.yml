@@ -35,11 +35,11 @@ services:
     #  - "5432:5432"
     networks:
       - backend
-    healthcheck:
-      test: ["CMD", "mosquitto_sub", "-h", "localhost", "-p", "1883", "-t", "test", "-C", "1", "-W", "3"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+    #healthcheck:
+    #  test: ["CMD", "mosquitto_sub", "-h", "localhost", "-p", "1883", "-t", "test", "-C", "1", "-W", "3"]
+    #  interval: 30s
+    #  timeout: 10s
+    #  retries: 3
 
   # -------------------------------
   # MQTT LISTENER INGEST WORKER

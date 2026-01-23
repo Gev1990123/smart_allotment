@@ -11,5 +11,5 @@ postgres:
   host: database
   port: 5432
   user: mqtt
-  password: mqtt123
+  password: smartallotment2026
   db: sensors
