@@ -80,14 +80,14 @@ def on_message(client, userdata, msg):
         # Loop through all sensors in the payload
         for sensor in data.get('sensors', []):
             sensor_id = f"{sensor['id']}" 
-
+            current_time = datetime.now(time.timezone.utc)
 
             # Dynamic INSERT based on sensor type
             if sensor['type'] == 'temperature':
                 cur.execute("""INSERT INTO sensor_data (time, sensor_id, temperature, device_id) 
                             VALUES (%s, %s, %s, %s)""",
                             (
-                            data.get('timestamp', datetime.now()), 
+                            current_time, 
                             sensor_id, 
                             sensor['value'], 
                             device_id))
@@ -95,7 +95,7 @@ def on_message(client, userdata, msg):
                 cur.execute("""INSERT INTO sensor_data (time, sensor_id, moisture, device_id) 
                             VALUES (%s, %s, %s, %s)""",
                             (
-                            data.get('timestamp', datetime.now()), 
+                            current_time, 
                             sensor_id, 
                             sensor['value'], 
                             device_id))
@@ -103,7 +103,7 @@ def on_message(client, userdata, msg):
                 cur.execute("""INSERT INTO sensor_data (time, sensor_id, light, device_id) 
                             VALUES (%s, %s, %s, %s)""",
                             (
-                            data.get('timestamp', datetime.now()), 
+                            current_time, 
                             sensor_id, 
                             sensor['value'], 
                             device_id))

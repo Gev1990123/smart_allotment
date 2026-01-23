@@ -33,7 +33,7 @@ def health():
 
 
 # ---------------------------------------------------------
-# GET LATEST READING FOR DEVICE
+# GET LATEST READINGS FOR DEVICE
 # ---------------------------------------------------------
 @app.get("/latest/{device_id}")
 def get_latest(device_id: str):
@@ -41,10 +41,8 @@ def get_latest(device_id: str):
         conn = get_connection()
         cur = conn.cursor()
 
-        # FIXED: Use 'time' column (not 'timestamp')
         cur.execute("""
-            SELECT time, device_id, sensor_id, moisture, temperature, 
-                   humidity, battery_voltage, rssi
+            SELECT time, device_id, sensor_id, moisture, temperature, light
             FROM sensor_data
             WHERE device_id = %s
             ORDER BY time DESC
@@ -57,22 +55,41 @@ def get_latest(device_id: str):
         if not row:
             return JSONResponse(status_code=404, content={"error": "No data found"})
 
-        # FIXED: Return named object frontend expects
-        time_idx, device_idx, sensor_idx, moisture_idx, temp_idx = 0, 1, 2, 3, 4
+        # Return ALL sensors from latest reading as array
+        sensors = []
+
+        # Moisture
+        if row[3] is not None:
+            sensors.append({
+                "timestamp": row[0],
+                "device_id": row[1],
+                "sensor_name": "moisture",
+                "sensor_value": row[3],
+                "unit": "%"
+            })
         
-        return {
-            "timestamp": row[time_idx],
-            "device_id": row[device_idx],
-            "sensor_id": row[sensor_idx],
-            "sensor_name": row[sensor_idx],  # Frontend uses this
-            "sensor_value": row[moisture_idx] or row[temp_idx],  # moisture OR temp
-            "moisture": row[moisture_idx],
-            "temperature": row[temp_idx],
-            "humidity": row[5],
-            "battery_voltage": row[6],
-            "rssi": row[7],
-            "unit": "%"  # For moisture
-        }
+        # Temperature  
+        if row[4] is not None:
+            sensors.append({
+                "timestamp": row[0],
+                "device_id": row[1], 
+                "sensor_name": "temperature",
+                "sensor_value": row[4],
+                "unit": "°C"
+            })
+        
+        # Light
+        if row[5] is not None:  # Note: light is index 5
+            sensors.append({
+                "timestamp": row[0],
+                "device_id": row[1],
+                "sensor_name": "light", 
+                "sensor_value": row[5],
+                "unit": "lux"
+            })
+
+        return sensors
+
 
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
