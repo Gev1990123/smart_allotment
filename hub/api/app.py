@@ -110,22 +110,27 @@ def get_history(device_id: str, hours: int = 24):
 # ---------------------------------------------------------
 @app.get("/sensors")
 def list_sensors():
+    conn = None
     try:
         conn = get_connection()
         cur = conn.cursor()
 
         cur.execute("SELECT DISTINCT device_id FROM sensor_data ORDER BY device_id;")
-        print(cur)
-        rows = [r[0] for r in cur.fetchall()]
-        print(rows)
+        rows = cur.fetchall()
+        devices = [row[0] for row in rows]
 
-
+        print(f"Found devices: {devices}")
+        
         conn.close()
 
-        return {"devices": rows}
+        return {"devices": devices}
 
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
+    
+    finally:
+        if conn:
+            conn.close
 
 
 # ---------------------------------------------------------
