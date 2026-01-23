@@ -2,14 +2,22 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
 from db import get_connection
 
 app = FastAPI(title="Smart Allotment API")
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Static + templates (absolute paths inside the container)
 app.mount("/static", StaticFiles(directory="/api/static"), name="static")
 templates = Jinja2Templates(directory="/api/templates")
-
 
 # ---------------------------------------------------------
 # HEALTH CHECK
@@ -115,7 +123,7 @@ def list_sensors():
         conn = get_connection()
         cur = conn.cursor()
 
-        cur.execute("SELECT DISTINCT device_id FROM sensor_data ORDER BY device_id;")
+        cur.execute("SELECT DISTINCT device_id FROM sensor_data WHERE device_id IS NOT NULL ORDER BY device_id;")
         rows = cur.fetchall()
         devices = [row[0] for row in rows]
 
