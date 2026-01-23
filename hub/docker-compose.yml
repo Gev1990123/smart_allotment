@@ -35,6 +35,11 @@ services:
     #  - "5432:5432"
     networks:
       - backend
+    healthcheck:
+      test: ["CMD", "mosquitto_sub", "-h", "localhost", "-p", "1883", "-t", "test", "-C", "1", "-W", "3"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # -------------------------------
   # MQTT LISTENER INGEST WORKER
@@ -44,8 +49,10 @@ services:
     container_name: mqtt_listener
     restart: unless-stopped
     depends_on:
-      - mqtt
-      - database
+      mqtt:
+        condition: service_healthy
+      database:
+        condition: service_healthy
     environment:
       # MQTT
       MQTT_HOST: mqtt

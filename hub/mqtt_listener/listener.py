@@ -1,21 +1,58 @@
+#!/usr/bin/env python3
 import paho.mqtt.client as mqtt
 import psycopg2
 import json
 from datetime import datetime
 import os
+import time
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 # Database config
 DB_HOST = os.getenv("PSQL_HOST", "database")
-DB_PORT = os.getenv("PSQL_PORT", "5432")
+DB_PORT = int(os.getenv("PSQL_PORT", "5432"))
 DB_USER = os.getenv("PSQL_USER", "mqtt")
 DB_PASS = os.getenv("PSQL_PASS", "mqtt123")
 DB_NAME = os.getenv("PSQL_DB", "sensors")
 
-# MQTT config  
+# MQTT config - FIXED: Use empty credentials from env
 MQTT_HOST = os.getenv("MQTT_HOST", "mqtt")
 MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
-MQTT_USER = os.getenv("MQTT_USERNAME", "matt")
-MQTT_PASS = os.getenv("MQTT_PASSWORD", "mqtt123")
+MQTT_USER = os.getenv("MQTT_USERNAME", "")  # Empty from your docker-compose
+MQTT_PASS = os.getenv("MQTT_PASSWORD", "")  # Empty from your docker-compose
+
+def wait_for_db():
+    """Wait for database readiness"""
+    while True:
+        try:
+            conn = psycopg2.connect(
+                host=DB_HOST, port=DB_PORT, user=DB_USER, 
+                password=DB_PASS, database=DB_NAME
+            )
+            conn.close()
+            logger.info("Database ready")
+            return True
+        except Exception as e:
+            logger.info(f"Waiting for database... {e}")
+            time.sleep(5)
+
+def wait_for_mqtt():
+    """Wait for MQTT broker"""
+    while True:
+        try:
+            test_client = mqtt.Client()
+            if MQTT_USER:
+                test_client.username_pw_set(MQTT_USER, MQTT_PASS)
+            test_client.connect(MQTT_HOST, MQTT_PORT, 5)
+            test_client.disconnect()
+            logger.info("MQTT broker ready")
+            return True
+        except Exception as e:
+            logger.info(f"Waiting for MQTT broker... {e}")
+            time.sleep(5)
 
 def connect_db():
     return psycopg2.connect(
@@ -24,39 +61,60 @@ def connect_db():
     )
 
 def on_connect(client, userdata, flags, rc):
-    print(f"Connected to MQTT broker: {rc}")
-    client.subscribe("sensors/+/data")
+    logger.info(f"Connected to MQTT broker: {rc}")
+    if rc == 0:
+        client.subscribe("sensors/+/data")
+        logger.info("Subscribed to sensors/+/data")
+    else:
+        logger.error(f"Connection failed with code {rc}")
 
 def on_message(client, userdata, msg):
     try:
         data = json.loads(msg.payload.decode())
-        print(f"Received: {data} from {msg.topic}")
+        logger.info(f"Received: {data} from {msg.topic}")
         
         conn = connect_db()
         cur = conn.cursor()
+        
+        # FIXED: Match your actual table schema (time, sensor_id, moisture, temperature)
+        sensor_id = msg.topic.split('/')[1]
         cur.execute("""
-            INSERT INTO sensor_data (device_id, timestamp, temperature, humidity, soil_moisture, location, battery_voltage)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO sensor_data (time, sensor_id, moisture, temperature)
+            VALUES (%s, %s, %s, %s)
         """, (
-            msg.topic.split('/')[1],           
-            datetime.now(),                      
-            data.get('temperature'),           
-            data.get('humidity'),
-            data.get('soil_moisture'),
-            data.get('location'),
-            data.get('battery_voltage')
+            datetime.now(),
+            sensor_id,
+            data.get('soil_moisture') or data.get('moisture'),
+            data.get('temperature')
         ))
+        
         conn.commit()
         cur.close()
         conn.close()
+        logger.info(f"Saved sensor {sensor_id} data")
+        
     except Exception as e:
-        print(f"Error: {e}")
+        logger.error(f"Error processing message: {e}")
 
-client = mqtt.Client()
-client.username_pw_set(MQTT_USER, MQTT_PASS)
-#client.tls_set(ca_certs="/listener/certs/ca.crt")
-client.on_connect = on_connect
-client.on_message = on_message
-
-client.connect(MQTT_HOST, MQTT_PORT, 60)
-client.loop_forever()
+if __name__ == "__main__":
+    logger.info("Starting MQTT listener...")
+    
+    # Wait for dependencies
+    wait_for_mqtt()
+    wait_for_db()
+    
+    # Create client
+    client = mqtt.Client()
+    if MQTT_USER and MQTT_PASS:
+        client.username_pw_set(MQTT_USER, MQTT_PASS)
+    
+    client.on_connect = on_connect
+    client.on_message = on_message
+    
+    # Connect and loop
+    try:
+        client.connect(MQTT_HOST, MQTT_PORT, 60)
+        logger.info("Starting MQTT event loop...")
+        client.loop_forever()
+    except KeyboardInterrupt:
+        logger.info("Shutting down...")
