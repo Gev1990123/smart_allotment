@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS sensor_data (
     sensor_id VARCHAR(50) NOT NULL,
     moisture INTEGER,
     temperature FLOAT,
+    light INTEGER,
     humidity FLOAT,
     battery_voltage FLOAT,
     rssi INTEGER,

@@ -76,25 +76,42 @@ def on_message(client, userdata, msg):
         conn = connect_db()
         cur = conn.cursor()
         
-        # FIXED: Match your actual table schema (time, sensor_id, moisture, temperature)
-        sensor_id = msg.topic.split('/')[1]
-        cur.execute("""
-            INSERT INTO sensor_data (time, sensor_id, moisture, temperature, humidity, battery_voltage, rssi)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-        """, (
-            datetime.now(),
-            sensor_id,  # 'soil-sensor-001'
-            data.get('moisture'),      # 65
-            data.get('temperature'),   # 18.2
-            data.get('humidity'),      # 72
-            data.get('battery_voltage'), # 3.4
-            data.get('rssi')           # -45
-        ))
-        
+        device_id = data.get('device_id', msg.topic.split('/')[1])
+        # Loop through all sensors in the payload
+        for sensor in data.get('sensors', []):
+            sensor_id = f"{sensor['id']}" 
+
+
+            # Dynamic INSERT based on sensor type
+            if sensor['type'] == 'temperature':
+                cur.execute("""INSERT INTO sensor_data (time, sensor_id, temperature, device_id) 
+                            VALUES (%s, %s, %s, %s)""",
+                            (
+                            data.get('timestamp', datetime.now()), 
+                            sensor_id, 
+                            sensor['value'], 
+                            device_id))
+            elif sensor['type'] == 'moisture':
+                cur.execute("""INSERT INTO sensor_data (time, sensor_id, moisture, device_id) 
+                            VALUES (%s, %s, %s, %s)""",
+                            (
+                            data.get('timestamp', datetime.now()), 
+                            sensor_id, 
+                            sensor['value'], 
+                            device_id))
+            elif sensor['type'] == 'light':
+                cur.execute("""INSERT INTO sensor_data (time, sensor_id, light, device_id) 
+                            VALUES (%s, %s, %s, %s)""",
+                            (
+                            data.get('timestamp', datetime.now()), 
+                            sensor_id, 
+                            sensor['value'], 
+                            device_id))
+                    
         conn.commit()
         cur.close()
         conn.close()
-        logger.info(f"Saved sensor {sensor_id} data")
+        logger.info(f"Saved {len(data.get('sensors', []))} sensors from {device_id}")
         
     except Exception as e:
         logger.error(f"Error processing message: {e}")
