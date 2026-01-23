@@ -1,4 +1,3 @@
-cat > database/init.sql << 'EOF'
 CREATE TABLE IF NOT EXISTS sensor_data (
     time TIMESTAMPTZ NOT NULL,
     sensor_id VARCHAR(50) NOT NULL,
@@ -11,4 +10,3 @@ CREATE TABLE IF NOT EXISTS sensor_data (
 );
 
 CREATE INDEX IF NOT EXISTS idx_sensor_time ON sensor_data (sensor_id, time DESC);
-EOF
