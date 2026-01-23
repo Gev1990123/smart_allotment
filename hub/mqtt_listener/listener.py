@@ -79,13 +79,16 @@ def on_message(client, userdata, msg):
         # FIXED: Match your actual table schema (time, sensor_id, moisture, temperature)
         sensor_id = msg.topic.split('/')[1]
         cur.execute("""
-            INSERT INTO sensor_data (time, sensor_id, moisture, temperature)
-            VALUES (%s, %s, %s, %s)
+            INSERT INTO sensor_data (time, sensor_id, moisture, temperature, humidity, battery_voltage, rssi)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
         """, (
             datetime.now(),
-            sensor_id,
-            data.get('soil_moisture') or data.get('moisture'),
-            data.get('temperature')
+            sensor_id,  # 'soil-sensor-001'
+            data.get('moisture'),      # 65
+            data.get('temperature'),   # 18.2
+            data.get('humidity'),      # 72
+            data.get('battery_voltage'), # 3.4
+            data.get('rssi')           # -45
         ))
         
         conn.commit()

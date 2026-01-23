@@ -1,5 +1,6 @@
 CREATE TABLE IF NOT EXISTS sensor_data (
     time TIMESTAMPTZ NOT NULL,
+    device_id TEXT,
     sensor_id VARCHAR(50) NOT NULL,
     moisture INTEGER,
     temperature FLOAT,
