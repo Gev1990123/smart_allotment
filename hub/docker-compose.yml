@@ -64,7 +64,7 @@ services:
       PSQL_HOST: database
       PSQL_PORT: 5432
       PSQL_USER: mqtt
-      PSQL_PASS: mqtt123
+      PSQL_PASS: smartallotment2026
       PSQL_DB: sensors
     volumes:
       - ./mqtt_listener:/listener
